@@ -429,7 +429,7 @@ namespace Accounting_System.Repository
             {
                 rows.Add(new ReceivingReportUploadExcelFileViewModel
                 {
-                    ReceivingReportNo = StringHelper.NormalizeString(worksheet.Cells[row, 21].GetValue<string>()),
+                    ReceivingReportNo = StringHelper.NormalizeString(worksheet.Cells[row, 24].GetValue<string>()),
                     Date = DateOnly.FromDateTime(worksheet.Cells[row, 1].GetValue<DateTime>()),
                     DueDate = DateOnly.FromDateTime(worksheet.Cells[row, 2].GetValue<DateTime>()),
                     SupplierInvoiceNumber = string.IsNullOrWhiteSpace(worksheet.Cells[row, 3].Text)
@@ -441,37 +441,37 @@ namespace Accounting_System.Repository
                     QuantityReceived = worksheet.Cells[row, 7].GetValue<decimal>(),
                     GainOrLoss = worksheet.Cells[row, 8].GetValue<decimal>(),
                     Amount = worksheet.Cells[row, 9].GetValue<decimal>(),
-                    OtherRef = string.IsNullOrWhiteSpace(worksheet.Cells[row, 10].Text)
+                    OtherRef = string.IsNullOrWhiteSpace(worksheet.Cells[row, 13].Text)
                         ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 10].GetValue<string?>()),
-                    Remarks = StringHelper.NormalizeString(worksheet.Cells[row, 11].GetValue<string>()),
-                    CreatedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 16].Text)
+                        : StringHelper.NormalizeString(worksheet.Cells[row, 13].GetValue<string?>()),
+                    Remarks = StringHelper.NormalizeString(worksheet.Cells[row, 14].GetValue<string>()),
+                    CreatedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 19].Text)
                         ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 16].GetValue<string?>()),
-                    CreatedDate = worksheet.Cells[row, 17].GetValue<DateTime>(),
-                    PostedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 23].Text)
+                        : StringHelper.NormalizeString(worksheet.Cells[row, 19].GetValue<string?>()),
+                    CreatedDate = worksheet.Cells[row, 20].GetValue<DateTime>(),
+                    PostedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 26].Text)
                         ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 23].GetValue<string?>()),
-                    PostedDate = worksheet.Cells[row, 24].GetValue<DateTime>(),
-                    CancellationRemarks = string.IsNullOrWhiteSpace(worksheet.Cells[row, 18].Text)
+                        : StringHelper.NormalizeString(worksheet.Cells[row, 26].GetValue<string?>()),
+                    PostedDate = worksheet.Cells[row, 27].GetValue<DateTime>(),
+                    CancellationRemarks = string.IsNullOrWhiteSpace(worksheet.Cells[row, 21].Text)
                         ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 18].GetValue<string?>()),
-                    ReceivedDate = DateOnly.FromDateTime(worksheet.Cells[row, 19].GetValue<DateTime>()),
-                    OriginalPOId = worksheet.Cells[row, 20].GetValue<int>(),
-                    OriginalSeriesNumber = StringHelper.NormalizeString(worksheet.Cells[row, 21].GetValue<string>()),
-                    OriginalDocumentId = worksheet.Cells[row, 22].GetValue<int>(),
-                    CanceledBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 27].Text)
+                        : StringHelper.NormalizeString(worksheet.Cells[row, 21].GetValue<string?>()),
+                    ReceivedDate = DateOnly.FromDateTime(worksheet.Cells[row, 22].GetValue<DateTime>()),
+                    OriginalPOId = worksheet.Cells[row, 23].GetValue<int>(),
+                    OriginalSeriesNumber = StringHelper.NormalizeString(worksheet.Cells[row, 24].GetValue<string>()),
+                    OriginalDocumentId = worksheet.Cells[row, 25].GetValue<int>(),
+                    CanceledBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 30].Text)
                         ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 27].GetValue<string>()),
-                    CanceledDate = worksheet.Cells[row, 28].GetValue<DateTime>(),
-                    VoidedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 29].Text)
+                        : StringHelper.NormalizeString(worksheet.Cells[row, 30].GetValue<string>()),
+                    CanceledDate = worksheet.Cells[row, 31].GetValue<DateTime>(),
+                    VoidedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 32].Text)
                         ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 29].GetValue<string>()),
-                    VoidedDate = worksheet.Cells[row, 30].GetValue<DateTime>(),
-                    EditedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 25].Text)
+                        : StringHelper.NormalizeString(worksheet.Cells[row, 32].GetValue<string>()),
+                    VoidedDate = worksheet.Cells[row, 33].GetValue<DateTime>(),
+                    EditedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 28].Text)
                         ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 25].GetValue<string>()),
-                    EditedDate = worksheet.Cells[row, 26].GetValue<DateTime>()
+                        : StringHelper.NormalizeString(worksheet.Cells[row, 28].GetValue<string>()),
+                    EditedDate = worksheet.Cells[row, 29].GetValue<DateTime>()
                 });
             }
 
