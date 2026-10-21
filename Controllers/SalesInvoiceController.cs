@@ -477,14 +477,16 @@ namespace Accounting_System.Controllers
             var model = await _salesInvoiceRepo.FindSalesInvoice(id, cancellationToken);
 
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-            var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.PostedBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+            var userName = await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+            var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CreatedBy : userName;
+            var postedBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.PostedBy : userName;
             var date = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.PostedDate : DateTime.Now;
             try
             {
                 if (!model.IsPosted)
                 {
                     model.IsPosted = true;
-                    model.PostedBy = createdBy;
+                    model.PostedBy = postedBy;
                     model.PostedDate = date;
 
                     #region --Sales Book Recording
@@ -647,7 +649,7 @@ namespace Accounting_System.Controllers
                     if (model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId == 0)
                     {
                         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                        AuditTrail auditTrailBook = new(createdBy, $"Posted invoice# {model.SalesInvoiceNo}", "Sales Invoice", ipAddress!);
+                        AuditTrail auditTrailBook = new(createdBy!, $"Posted invoice# {model.SalesInvoiceNo}", "Sales Invoice", ipAddress!);
                         await _dbContext.AddAsync(auditTrailBook, cancellationToken);
                     }
 
@@ -680,7 +682,9 @@ namespace Accounting_System.Controllers
             if (model != null && existingInventory != null)
             {
                 await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-                var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.VoidedBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+                var userName = await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+                var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CreatedBy : userName;
+                var voidedBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.VoidedBy : userName;
                 var date = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.VoidedDate : DateTime.Now;
                 try
                 {
@@ -692,7 +696,7 @@ namespace Accounting_System.Controllers
                         }
 
                         model.IsVoided = true;
-                        model.VoidedBy = createdBy;
+                        model.VoidedBy = voidedBy;
                         model.VoidedDate = date;
 
                         await _generalRepo.RemoveRecords<SalesBook>(sb => sb.SerialNo == model.SalesInvoiceNo, cancellationToken);
@@ -704,7 +708,7 @@ namespace Accounting_System.Controllers
                         if (model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId == 0)
                         {
                             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                            AuditTrail auditTrailBook = new(createdBy, $"Voided invoice# {model.SalesInvoiceNo}", "Sales Invoice", ipAddress!);
+                            AuditTrail auditTrailBook = new(createdBy!, $"Voided invoice# {model.SalesInvoiceNo}", "Sales Invoice", ipAddress!);
                             await _dbContext.AddAsync(auditTrailBook, cancellationToken);
                         }
 
@@ -731,7 +735,9 @@ namespace Accounting_System.Controllers
         {
             var model = await _dbContext.SalesInvoices.FirstOrDefaultAsync(x => x.SalesInvoiceId == id, cancellationToken);
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-            var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CanceledBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+            var userName = await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+            var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CreatedBy : userName;
+            var canceledBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CanceledBy : userName;
             var date = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CanceledDate : DateTime.Now;
             try
             {
@@ -740,7 +746,7 @@ namespace Accounting_System.Controllers
                     if (!model.IsCanceled)
                     {
                         model.IsCanceled = true;
-                        model.CanceledBy = createdBy;
+                        model.CanceledBy = canceledBy;
                         model.CanceledDate = date;
                         model.Status = "Cancelled";
                         model.CancellationRemarks = cancellationRemarks;
@@ -750,7 +756,7 @@ namespace Accounting_System.Controllers
                         if (model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId == 0)
                         {
                             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                            AuditTrail auditTrailBook = new(createdBy, $"Cancelled invoice# {model.SalesInvoiceNo}", "Sales Invoice", ipAddress!);
+                            AuditTrail auditTrailBook = new(createdBy!, $"Cancelled invoice# {model.SalesInvoiceNo}", "Sales Invoice", ipAddress!);
                             await _dbContext.AddAsync(auditTrailBook, cancellationToken);
                         }
 
@@ -996,6 +1002,41 @@ namespace Accounting_System.Controllers
                                 existing.SalesInvoiceNo,
                                 "IBS-RCD");
                         }
+                    }
+                    if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                    {
+                        if (existing != null)
+                        {
+                            existing.IsPosted = true;
+                            existing.PostedBy = row.PostedBy;
+                            existing.PostedDate = row.PostedDate;
+                        }
+
+                        await _salesInvoiceRepo.SalesBookPosting(row, cancellationToken);
+                        await _salesInvoiceRepo.GeneralLedgerBookPosting(row, cancellationToken);
+                        await _salesInvoiceRepo.AddSalesToInventoryBookAsync(row, cancellationToken);
+                    }
+
+                    var existingInventory = await _dbContext.Inventories
+                        .Include(i => i.Product)
+                        .FirstOrDefaultAsync(i => i.Reference == row.SalesInvoiceNo, cancellationToken: cancellationToken);
+                    if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && existingInventory != null)
+                    {
+                        if (existing != null)
+                        {
+                            if (existing.IsPosted)
+                            {
+                                existing.IsPosted = false;
+                            }
+
+                            existing.IsVoided = true;
+                            existing.VoidedBy = row.VoidedBy;
+                            existing.VoidedDate = row.VoidedDate;
+                        }
+
+                        await _generalRepo.RemoveRecords<SalesBook>(sb => sb.SerialNo == row.SalesInvoiceNo, cancellationToken);
+                        await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == row.SalesInvoiceNo, cancellationToken);
+                        await _inventoryRepo.VoidInventory(existingInventory, cancellationToken);
                     }
                 }
 

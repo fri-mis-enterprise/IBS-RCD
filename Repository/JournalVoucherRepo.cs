@@ -212,11 +212,14 @@ namespace Accounting_System.Repository
                 JVReason = row.JVReason,
                 CreatedBy = row.CreatedBy,
                 CreatedDate = row.CreatedDate,
+                IsPosted = !string.IsNullOrEmpty(row.PostedBy),
                 PostedBy = row.PostedBy,
                 PostedDate = row.PostedDate,
                 CancellationRemarks = row.CancellationRemarks,
+                IsCanceled = !string.IsNullOrEmpty(row.CanceledBy),
                 CanceledBy = row.CanceledBy,
                 CanceledDate = row.CanceledDate,
+                IsVoided = !string.IsNullOrEmpty(row.VoidedBy),
                 VoidedBy = row.VoidedBy,
                 VoidedDate = row.VoidedDate,
                 EditedBy = row.EditedBy,
@@ -488,6 +491,64 @@ namespace Accounting_System.Repository
                 row.OriginalDocumentId.ToString());
 
             return changes;
+        }
+
+        public async Task GeneralLedgerBookPosting(JournalVoucherHeader header, CancellationToken cancellationToken)
+        {
+            var modelDetails = await _dbContext.JournalVoucherDetails.Where(jvd => jvd.TransactionNo == header.JournalVoucherHeaderNo).ToListAsync(cancellationToken);
+
+            var accountTitlesDto = await _generalRepo.GetListOfAccountTitleDto(cancellationToken);
+            var ledgers = new List<GeneralLedgerBook>();
+            foreach (var details in modelDetails)
+            {
+                var account = accountTitlesDto.Find(c => c.AccountNumber == details.AccountNo) ?? throw new ArgumentException($"Account number '{details.AccountNo}', Account title '{details.AccountName}' not found.");
+                ledgers.Add(
+                        new GeneralLedgerBook
+                        {
+                            Date = header.Date,
+                            Reference = header.JournalVoucherHeaderNo!,
+                            Description = header.Particulars,
+                            AccountNo = account.AccountNumber,
+                            AccountTitle = account.AccountName,
+                            Debit = details.Debit,
+                            Credit = details.Credit,
+                            CreatedBy = header.CreatedBy,
+                            CreatedDate = header.CreatedDate
+                        }
+                    );
+            }
+
+            if (!_generalRepo.IsJournalEntriesBalanced(ledgers))
+            {
+                throw new ArgumentException("Debit and Credit is not equal, check your entries.");
+            }
+
+            await _dbContext.GeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
+        }
+
+        public async Task JournalBookPosting(JournalVoucherHeader header, CancellationToken cancellationToken)
+        {
+            var modelDetails = await _dbContext.JournalVoucherDetails.Where(jvd => jvd.TransactionNo == header.JournalVoucherHeaderNo).ToListAsync(cancellationToken);
+
+            var journalBook = new List<JournalBook>();
+            foreach (var details in modelDetails)
+            {
+                journalBook.Add(
+                        new JournalBook
+                        {
+                            Date = header.Date,
+                            Reference = header.JournalVoucherHeaderNo!,
+                            Description = header.Particulars,
+                            AccountTitle = details.AccountNo + " " + details.AccountName,
+                            Debit = details.Debit,
+                            Credit = details.Credit,
+                            CreatedBy = header.CreatedBy,
+                            CreatedDate = header.CreatedDate
+                        }
+                    );
+            }
+
+            await _dbContext.JournalBooks.AddRangeAsync(journalBook, cancellationToken);
         }
     }
 }

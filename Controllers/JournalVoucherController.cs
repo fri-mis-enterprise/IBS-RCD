@@ -1736,6 +1736,8 @@ namespace Accounting_System.Controllers
 
                     #endregion -- Check Voucher Details Import --
 
+                    var postedJournalVouchers = new List<JournalVoucherHeader>();
+
                     #region -- Journal Voucher Header Import --
 
                     if (worksheet != null)
@@ -1750,6 +1752,7 @@ namespace Accounting_System.Controllers
 
                         foreach (var row in rows)
                         {
+                            JournalVoucherHeader header;
                             if (!lookup.ExistingJournalVoucherHeader.TryGetValue(row.OriginalSeriesNumber, out var existing))
                             {
                                 if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
@@ -1757,7 +1760,8 @@ namespace Accounting_System.Controllers
                                     continue;
                                 }
 
-                                journalVoucherHeader.Add(_journalVoucherRepo.MapToJournalVoucherEntity(row, lookup));
+                                header = _journalVoucherRepo.MapToJournalVoucherEntity(row, lookup);
+                                journalVoucherHeader.Add(header);
                                 auditTrails.AddRange(_journalVoucherRepo.AuditTrails(row, ipAddress ?? string.Empty));
                             }
                             else
@@ -1771,6 +1775,50 @@ namespace Accounting_System.Controllers
                                         await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
                                         existing.JournalVoucherHeaderNo!,
                                         "IBS-RCD");
+                                }
+
+                                header = existing;
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                            {
+                                if (existing != null)
+                                {
+                                    existing.IsPosted = true;
+                                    existing.PostedBy = row.PostedBy;
+                                    existing.PostedDate = row.PostedDate;
+                                }
+
+                                if (string.IsNullOrWhiteSpace(row.VoidedBy) || row.VoidedDate == default)
+                                {
+                                    postedJournalVouchers.Add(header);
+                                }
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default)
+                            {
+                                if (existing != null)
+                                {
+                                    if (existing.IsPosted)
+                                    {
+                                        existing.IsPosted = false;
+                                    }
+
+                                    existing.IsVoided = true;
+                                    existing.VoidedBy = row.VoidedBy;
+                                    existing.VoidedDate = row.VoidedDate;
+                                }
+
+                                var findJournalVoucherInJournalBook = await _dbContext.JournalBooks.Where(jb => jb.Reference == header.JournalVoucherHeaderNo).ToListAsync(cancellationToken);
+                                var findJournalVoucherInGeneralLedger = await _dbContext.GeneralLedgerBooks.Where(jb => jb.Reference == header.JournalVoucherHeaderNo).ToListAsync(cancellationToken);
+
+                                if (findJournalVoucherInJournalBook.Any())
+                                {
+                                    await _generalRepo.RemoveRecords<JournalBook>(crb => crb.Reference == header.JournalVoucherHeaderNo, cancellationToken);
+                                }
+                                if (findJournalVoucherInGeneralLedger.Any())
+                                {
+                                    await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == header.JournalVoucherHeaderNo, cancellationToken);
                                 }
                             }
                         }
@@ -1823,6 +1871,12 @@ namespace Accounting_System.Controllers
                     }
 
                     #endregion -- Journal Voucher Details Import --
+
+                    foreach (var header in postedJournalVouchers)
+                    {
+                        await _journalVoucherRepo.GeneralLedgerBookPosting(header, cancellationToken);
+                        await _journalVoucherRepo.JournalBookPosting(header, cancellationToken);
+                    }
 
                     await _dbContext.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);

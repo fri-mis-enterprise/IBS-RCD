@@ -263,11 +263,16 @@ namespace Accounting_System.Repository
                 ServicesId = row.ServicesId,
                 CreatedBy = row.CreatedBy,
                 CreatedDate = row.CreatedDate,
+
+                IsPosted = !string.IsNullOrEmpty(row.PostedBy),
                 PostedBy = row.PostedBy,
                 PostedDate = row.PostedDate,
+
                 CancellationRemarks = row.CancellationRemarks,
+                IsCanceled = !string.IsNullOrEmpty(row.CanceledBy),
                 CanceledBy = row.CanceledBy,
                 CanceledDate = row.CanceledDate,
+                IsVoided = !string.IsNullOrEmpty(row.VoidedBy),
                 VoidedBy = row.VoidedBy,
                 VoidedDate = row.VoidedDate,
                 EditedBy = row.EditedBy,
@@ -452,6 +457,413 @@ namespace Accounting_System.Repository
                 StringHelper.NormalizeString(row.OriginalDocumentId.ToString()));
 
             return changes;
+        }
+
+        private ViewModelDMCM ComputeSvComputation(
+            DebitMemoUploadExcelFileViewModel row,
+            Customer customer,
+            Services service)
+        {
+            var viewModelDmcm = new ViewModelDMCM();
+
+            viewModelDmcm.Period = DateOnly.FromDateTime(row.CreatedDate) >= row.Period ? DateOnly.FromDateTime(row.CreatedDate) : row.Period.AddMonths(1).AddDays(-1);
+
+            if (customer.CustomerType == "Vatable")
+            {
+                viewModelDmcm.Total = row.Amount;
+                viewModelDmcm.NetAmount = _generalRepo.ComputeNetOfVat(viewModelDmcm.Total);
+                viewModelDmcm.VatAmount = _generalRepo.ComputeVatAmount(viewModelDmcm.NetAmount);
+                viewModelDmcm.WithholdingTaxAmount = viewModelDmcm.NetAmount * (customer.WithHoldingTax ? service.Percent / 100m : 0);
+                if (customer.WithHoldingVat)
+                {
+                    viewModelDmcm.WithholdingVatAmount = viewModelDmcm.NetAmount * 0.05m;
+                }
+            }
+            else
+            {
+                viewModelDmcm.NetAmount = row.Amount;
+                viewModelDmcm.WithholdingTaxAmount = viewModelDmcm.NetAmount * (customer.WithHoldingTax ? service.Percent / 100m : 0);
+                if (customer.WithHoldingVat)
+                {
+                    viewModelDmcm.WithholdingVatAmount = viewModelDmcm.NetAmount * 0.05m;
+                }
+            }
+
+            return viewModelDmcm;
+        }
+
+        public async Task SalesBookPosting(
+            DebitMemoUploadExcelFileViewModel row,
+            CancellationToken cancellationToken)
+        {
+            var salesInvoice = await _dbContext.SalesInvoices
+                .Include(x => x.Customer)
+                .Include(x => x.Product)
+                .FirstOrDefaultAsync(x => x.OriginalDocumentId == row.OriginalSalesInvoiceId, cancellationToken);
+
+            var serviceInvoice = await _dbContext.ServiceInvoices
+                .Include(x => x.Customer)
+                .Include(x => x.Service)
+                .FirstOrDefaultAsync(x => x.OriginalDocumentId == row.OriginalServiceInvoiceId, cancellationToken);
+
+            if (salesInvoice != null)
+            {
+                var customer = salesInvoice.Customer!;
+                var product = salesInvoice.Product!;
+                var sales = new SalesBook();
+
+                if (customer.CustomerType == "Vatable")
+                {
+                    sales.TransactionDate = row.TransactionDate;
+                    sales.SerialNo = row.DebitMemoNo;
+                    sales.SoldTo = customer.CustomerName;
+                    sales.TinNo = customer.CustomerTin;
+                    sales.Address = customer.CustomerAddress;
+                    sales.Description = product.ProductName;
+                    sales.Amount = row.DebitAmount;
+                    sales.VatableSales = _generalRepo.ComputeNetOfVat(sales.Amount);
+                    sales.VatAmount = _generalRepo.ComputeVatAmount(sales.VatableSales);
+                    sales.NetSales = sales.VatableSales;
+                    sales.CreatedBy = row.CreatedBy;
+                    sales.CreatedDate = row.CreatedDate;
+                    sales.DueDate = salesInvoice.DueDate;
+                    sales.DocumentId = salesInvoice.SalesInvoiceId;
+                }
+                else if (customer.CustomerType == "Exempt")
+                {
+                    sales.TransactionDate = row.TransactionDate;
+                    sales.SerialNo = row.DebitMemoNo;
+                    sales.SoldTo = customer.CustomerName;
+                    sales.TinNo = customer.CustomerTin;
+                    sales.Address = customer.CustomerAddress;
+                    sales.Description = product.ProductName;
+                    sales.Amount = row.DebitAmount;
+                    sales.VatExemptSales = row.DebitAmount;
+                    sales.NetSales = sales.Amount;
+                    sales.CreatedBy = row.CreatedBy;
+                    sales.CreatedDate = row.CreatedDate;
+                    sales.DueDate = salesInvoice.DueDate;
+                    sales.DocumentId = salesInvoice.SalesInvoiceId;
+                }
+                else
+                {
+                    sales.TransactionDate = row.TransactionDate;
+                    sales.SerialNo = row.DebitMemoNo;
+                    sales.SoldTo = customer.CustomerName;
+                    sales.TinNo = customer.CustomerTin;
+                    sales.Address = customer.CustomerAddress;
+                    sales.Description = product.ProductName;
+                    sales.Amount = row.DebitAmount;
+                    sales.ZeroRated = row.DebitAmount;
+                    sales.NetSales = sales.Amount;
+                    sales.CreatedBy = row.CreatedBy;
+                    sales.CreatedDate = row.CreatedDate;
+                    sales.DueDate = salesInvoice.DueDate;
+                    sales.DocumentId = salesInvoice.SalesInvoiceId;
+                }
+
+                await _dbContext.SalesBooks.AddAsync(sales, cancellationToken);
+            }
+
+            if (serviceInvoice != null)
+            {
+                var customer = serviceInvoice.Customer!;
+                var service = serviceInvoice.Service!;
+                var viewModelDmcm = ComputeSvComputation(row, customer, service);
+                var sales = new SalesBook();
+
+                if (customer.CustomerType == "Vatable")
+                {
+                    sales.TransactionDate = viewModelDmcm.Period;
+                    sales.SerialNo = row.DebitMemoNo;
+                    sales.SoldTo = customer.CustomerName;
+                    sales.TinNo = customer.CustomerTin;
+                    sales.Address = customer.CustomerAddress;
+                    sales.Description = service.Name;
+                    sales.Amount = viewModelDmcm.Total;
+                    sales.VatAmount = viewModelDmcm.VatAmount;
+                    sales.VatableSales = viewModelDmcm.Total / 1.12m;
+                    sales.NetSales = viewModelDmcm.NetAmount;
+                    sales.CreatedBy = row.CreatedBy;
+                    sales.CreatedDate = row.CreatedDate;
+                    sales.DueDate = serviceInvoice.DueDate;
+                    sales.DocumentId = serviceInvoice.ServiceInvoiceId;
+                }
+                else if (customer.CustomerType == "Exempt")
+                {
+                    sales.TransactionDate = viewModelDmcm.Period;
+                    sales.SerialNo = row.DebitMemoNo;
+                    sales.SoldTo = customer.CustomerName;
+                    sales.TinNo = customer.CustomerTin;
+                    sales.Address = customer.CustomerAddress;
+                    sales.Description = service.Name;
+                    sales.Amount = viewModelDmcm.Total;
+                    sales.VatExemptSales = viewModelDmcm.Total;
+                    sales.NetSales = viewModelDmcm.NetAmount;
+                    sales.CreatedBy = row.CreatedBy;
+                    sales.CreatedDate = row.CreatedDate;
+                    sales.DueDate = serviceInvoice.DueDate;
+                    sales.DocumentId = serviceInvoice.ServiceInvoiceId;
+                }
+                else
+                {
+                    sales.TransactionDate = viewModelDmcm.Period;
+                    sales.SerialNo = row.DebitMemoNo;
+                    sales.SoldTo = customer.CustomerName;
+                    sales.TinNo = customer.CustomerTin;
+                    sales.Address = customer.CustomerAddress;
+                    sales.Description = service.Name;
+                    sales.Amount = viewModelDmcm.Total;
+                    sales.ZeroRated = viewModelDmcm.Total;
+                    sales.NetSales = viewModelDmcm.NetAmount;
+                    sales.CreatedBy = row.CreatedBy;
+                    sales.CreatedDate = row.CreatedDate;
+                    sales.DueDate = serviceInvoice.DueDate;
+                    sales.DocumentId = serviceInvoice.ServiceInvoiceId;
+                }
+
+                await _dbContext.SalesBooks.AddAsync(sales, cancellationToken);
+            }
+        }
+
+        public async Task GeneralLedgerBookPosting(
+            DebitMemoUploadExcelFileViewModel row,
+            CancellationToken cancellationToken)
+        {
+            var salesInvoice = await _dbContext.SalesInvoices
+                .Include(x => x.Customer)
+                .Include(x => x.Product)
+                .FirstOrDefaultAsync(x => x.OriginalDocumentId == row.OriginalSalesInvoiceId, cancellationToken);
+
+            var serviceInvoice = await _dbContext.ServiceInvoices
+                .Include(x => x.Customer)
+                .Include(x => x.Service)
+                .FirstOrDefaultAsync(x => x.OriginalDocumentId == row.OriginalServiceInvoiceId, cancellationToken);
+
+            var accountTitlesDto = await _generalRepo.GetListOfAccountTitleDto(cancellationToken);
+            var arTradeReceivableTitle = accountTitlesDto.Find(c => c.AccountNumber == "101020100") ?? throw new ArgumentException("Account number: '101020100', Account title: 'AR-Trade Receivable' not found.");
+            var arNonTradeReceivableTitle = accountTitlesDto.Find(c => c.AccountNumber == "101020500") ?? throw new ArgumentException("Account number: '101020500', Account title: 'AR-Non Trade Receivable' not found.");
+            var arTradeCwt = accountTitlesDto.Find(c => c.AccountNumber == "101020200") ?? throw new ArgumentException("Account number: '101020200', Account title: 'AR-Trade Receivable - Creditable Withholding Tax' not found.");
+            var arTradeCwv = accountTitlesDto.Find(c => c.AccountNumber == "101020300") ?? throw new ArgumentException("Account number: '101020300', Account title: 'AR-Trade Receivable - Creditable Withholding Vat' not found.");
+            var vatOutputTitle = accountTitlesDto.Find(c => c.AccountNumber == "201030100") ?? throw new ArgumentException("Account number: '201030100', Account title: 'Vat - Output' not found.");
+
+            if (salesInvoice != null)
+            {
+                var customer = salesInvoice.Customer!;
+                var product = salesInvoice.Product!;
+                var (salesAcctNo, _) = _generalRepo.GetSalesAccountTitle(product.ProductCode!);
+                var salesTitle = accountTitlesDto.Find(c => c.AccountNumber == salesAcctNo) ?? throw new ArgumentException($"Account title '{salesAcctNo}' not found.");
+
+                decimal withHoldingTaxAmount = 0;
+                decimal withHoldingVatAmount = 0;
+                decimal netOfVatAmount;
+                decimal vatAmount = 0;
+                if (customer.CustomerType == CS.VatType_Vatable)
+                {
+                    netOfVatAmount = _generalRepo.ComputeNetOfVat(row.DebitAmount);
+                    vatAmount = _generalRepo.ComputeVatAmount(netOfVatAmount);
+                }
+                else
+                {
+                    netOfVatAmount = row.DebitAmount;
+                }
+                if (customer.WithHoldingTax)
+                {
+                    withHoldingTaxAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m);
+                }
+                if (customer.WithHoldingVat)
+                {
+                    withHoldingVatAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.05m);
+                }
+
+                var ledgers = new List<GeneralLedgerBook>
+                {
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.DebitMemoNo,
+                        Description = product.ProductName,
+                        AccountNo = arTradeReceivableTitle.AccountNumber,
+                        AccountTitle = arTradeReceivableTitle.AccountName,
+                        Debit = row.DebitAmount - (withHoldingTaxAmount + withHoldingVatAmount),
+                        Credit = 0,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                };
+
+                if (withHoldingTaxAmount > 0)
+                {
+                    ledgers.Add(
+                        new GeneralLedgerBook
+                        {
+                            Date = row.TransactionDate,
+                            Reference = row.DebitMemoNo,
+                            Description = product.ProductName,
+                            AccountNo = arTradeCwt.AccountNumber,
+                            AccountTitle = arTradeCwt.AccountNumber,
+                            Debit = withHoldingTaxAmount,
+                            Credit = 0,
+                            CreatedBy = row.CreatedBy,
+                            CreatedDate = row.CreatedDate
+                        }
+                    );
+                }
+                if (withHoldingVatAmount > 0)
+                {
+                    ledgers.Add(
+                        new GeneralLedgerBook
+                        {
+                            Date = row.TransactionDate,
+                            Reference = row.DebitMemoNo,
+                            Description = product.ProductName,
+                            AccountNo = arTradeCwv.AccountNumber,
+                            AccountTitle = arTradeCwv.AccountName,
+                            Debit = withHoldingVatAmount,
+                            Credit = 0,
+                            CreatedBy = row.CreatedBy,
+                            CreatedDate = row.CreatedDate
+                        }
+                    );
+                }
+                ledgers.Add(
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.DebitMemoNo,
+                        Description = product.ProductName,
+                        AccountNo = salesTitle.AccountNumber,
+                        AccountTitle = salesTitle.AccountNumber,
+                        Debit = 0,
+                        CreatedBy = row.CreatedBy,
+                        Credit = netOfVatAmount,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+                if (vatAmount > 0)
+                {
+                    ledgers.Add(
+                        new GeneralLedgerBook
+                        {
+                            Date = row.TransactionDate,
+                            Reference = row.DebitMemoNo,
+                            Description = product.ProductName,
+                            AccountNo = vatOutputTitle.AccountNumber,
+                            AccountTitle = vatOutputTitle.AccountName,
+                            Debit = 0,
+                            Credit = vatAmount,
+                            CreatedBy = row.CreatedBy,
+                            CreatedDate = row.CreatedDate
+                        }
+                    );
+                }
+
+                if (!_generalRepo.IsJournalEntriesBalanced(ledgers))
+                {
+                    throw new ArgumentException("Debit and Credit is not equal, check your entries.");
+                }
+
+                await _dbContext.GeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
+            }
+
+            if (serviceInvoice != null)
+            {
+                var customer = serviceInvoice.Customer!;
+                var service = serviceInvoice.Service!;
+                var viewModelDmcm = ComputeSvComputation(row, customer, service);
+
+                var ledgers = new List<GeneralLedgerBook>
+                {
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.DebitMemoNo,
+                        Description = service.Name,
+                        AccountNo = arNonTradeReceivableTitle.AccountNumber,
+                        AccountTitle = arNonTradeReceivableTitle.AccountName,
+                        Debit = viewModelDmcm.Total - (viewModelDmcm.WithholdingTaxAmount + viewModelDmcm.WithholdingVatAmount),
+                        Credit = 0,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                };
+
+                if (viewModelDmcm.WithholdingTaxAmount > 0)
+                {
+                    ledgers.Add(
+                        new GeneralLedgerBook
+                        {
+                            Date = row.TransactionDate,
+                            Reference = row.DebitMemoNo,
+                            Description = service.Name,
+                            AccountNo = arTradeCwt.AccountNumber,
+                            AccountTitle = arTradeCwt.AccountName,
+                            Debit = viewModelDmcm.WithholdingTaxAmount,
+                            Credit = 0,
+                            CreatedBy = row.CreatedBy,
+                            CreatedDate = row.CreatedDate
+                        }
+                    );
+                }
+                if (viewModelDmcm.WithholdingVatAmount > 0)
+                {
+                    ledgers.Add(
+                        new GeneralLedgerBook
+                        {
+                            Date = row.TransactionDate,
+                            Reference = row.DebitMemoNo,
+                            Description = service.Name,
+                            AccountNo = arTradeCwv.AccountNumber,
+                            AccountTitle = arTradeCwv.AccountName,
+                            Debit = viewModelDmcm.WithholdingVatAmount,
+                            Credit = 0,
+                            CreatedBy = row.CreatedBy,
+                            CreatedDate = row.CreatedDate
+                        }
+                    );
+                }
+
+                if (viewModelDmcm.Total > 0)
+                {
+                    ledgers.Add(new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.DebitMemoNo,
+                        Description = service.Name,
+                        AccountNo = service.CurrentAndPreviousNo!,
+                        AccountTitle = service.CurrentAndPreviousTitle!,
+                        Debit = 0,
+                        Credit = viewModelDmcm.Total / 1.12m,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    });
+                }
+
+                if (viewModelDmcm.VatAmount > 0)
+                {
+                    ledgers.Add(
+                        new GeneralLedgerBook
+                        {
+                            Date = row.TransactionDate,
+                            Reference = row.DebitMemoNo,
+                            Description = service.Name,
+                            AccountNo = vatOutputTitle.AccountNumber,
+                            AccountTitle = vatOutputTitle.AccountName,
+                            Debit = 0,
+                            Credit = viewModelDmcm.VatAmount,
+                            CreatedBy = row.CreatedBy,
+                            CreatedDate = row.CreatedDate
+                        }
+                    );
+                }
+
+                if (!_generalRepo.IsJournalEntriesBalanced(ledgers))
+                {
+                    throw new ArgumentException("Debit and Credit is not equal, check your entries.");
+                }
+
+                await _dbContext.GeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
+            }
         }
     }
 }

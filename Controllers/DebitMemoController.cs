@@ -1500,6 +1500,48 @@ namespace Accounting_System.Controllers
                                     "IBS-RCD");
                             }
                         }
+                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                        {
+                            if (existing != null)
+                            {
+                                existing.IsPosted = true;
+                                existing.PostedBy = row.PostedBy;
+                                existing.PostedDate = row.PostedDate;
+                            }
+
+                            await _debitMemoRepo.SalesBookPosting(row, cancellationToken);
+                            await _debitMemoRepo.GeneralLedgerBookPosting(row, cancellationToken);
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default)
+                        {
+                            if (existing != null)
+                            {
+                                if (existing.IsPosted)
+                                {
+                                    existing.IsPosted = false;
+                                }
+
+                                existing.IsVoided = true;
+                                existing.VoidedBy = row.VoidedBy;
+                                existing.VoidedDate = row.VoidedDate;
+                            }
+
+                            await _dbContext.SaveChangesAsync(cancellationToken);
+
+                            var findSalesBook = await _dbContext.SalesBooks.AnyAsync(sb => sb.SerialNo == row.DebitMemoNo, cancellationToken);
+                            var findGeneralLedgerBook = await _dbContext.GeneralLedgerBooks.AnyAsync(gl => gl.Reference == row.DebitMemoNo, cancellationToken);
+
+                            if (findSalesBook)
+                            {
+                                await _generalRepo.RemoveRecords<SalesBook>(sb => sb.SerialNo == row.DebitMemoNo, cancellationToken);
+                            }
+
+                            if (findGeneralLedgerBook)
+                            {
+                                await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == row.DebitMemoNo, cancellationToken);
+                            }
+                        }
                     }
 
                     _dbContext.DebitMemos.AddRange(debitMemos);

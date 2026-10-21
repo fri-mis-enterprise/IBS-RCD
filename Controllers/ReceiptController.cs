@@ -2436,6 +2436,7 @@ namespace Accounting_System.Controllers
 
                     foreach (var row in rows)
                     {
+                        CollectionReceipt collectionReceipt;
                         if (!lookup.ExistingCollectionReceipt.TryGetValue(row.OriginalSeriesNumber, out var existing))
                         {
                             if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
@@ -2443,7 +2444,8 @@ namespace Accounting_System.Controllers
                                 continue;
                             }
 
-                            collectionReceipts.Add(_receiptRepo.MapToCollectionReceiptEntity(row, lookup));
+                            collectionReceipt = _receiptRepo.MapToCollectionReceiptEntity(row, lookup);
+                            collectionReceipts.Add(collectionReceipt);
                             auditTrails.AddRange(_receiptRepo.AuditTrails(row, ipAddress ?? string.Empty));
                         }
                         else
@@ -2458,6 +2460,119 @@ namespace Accounting_System.Controllers
                                     await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
                                     existing.CollectionReceiptNo,
                                     "IBS-RCD");
+                            }
+
+                            collectionReceipt = existing;
+                        }
+                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                        {
+                            if (existing != null)
+                            {
+                                existing.IsPosted = true;
+                                existing.PostedBy = row.PostedBy;
+                                existing.PostedDate = row.PostedDate;
+                            }
+
+                            await _receiptRepo.CollectionReceiptPosting(row, cancellationToken);
+
+                            var paymentSalesInvoiceId = collectionReceipt.SalesInvoiceId;
+                            var paymentMultipleSIIds = collectionReceipt.MultipleSIId;
+                            var paymentMultipleSI = collectionReceipt.MultipleSI;
+                            var paymentMultipleAmounts = collectionReceipt.SIMultipleAmount;
+                            var paymentServiceInvoiceId = collectionReceipt.ServiceInvoiceId;
+
+                            if (paymentSalesInvoiceId != null)
+                            {
+                                if (await _dbContext.SalesInvoices.AnyAsync(x => x.SalesInvoiceId == paymentSalesInvoiceId, cancellationToken))
+                                {
+                                    await _receiptRepo.UpdateInvoice(paymentSalesInvoiceId.Value, collectionReceipt.Total, 0, cancellationToken);
+                                }
+                            }
+                            else if (paymentMultipleSIIds != null && paymentMultipleSI != null && paymentMultipleAmounts != null)
+                            {
+                                var presentInvoices = await _dbContext.SalesInvoices.CountAsync(x => paymentMultipleSIIds.Contains(x.SalesInvoiceId), cancellationToken);
+                                if (paymentMultipleSIIds.Length == paymentMultipleAmounts.Length && presentInvoices == paymentMultipleSIIds.Length)
+                                {
+                                    await _receiptRepo.UpdateMultipleInvoice(paymentMultipleSI, paymentMultipleAmounts, 0, cancellationToken);
+                                }
+                            }
+                            else if (paymentServiceInvoiceId != null)
+                            {
+                                if (await _dbContext.ServiceInvoices.AnyAsync(x => x.ServiceInvoiceId == paymentServiceInvoiceId, cancellationToken))
+                                {
+                                    await _receiptRepo.UpdateSv(paymentServiceInvoiceId.Value, collectionReceipt.Total, 0, cancellationToken);
+                                }
+                            }
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default)
+                        {
+                            if (existing != null)
+                            {
+                                if (existing.IsPosted)
+                                {
+                                    existing.IsPosted = false;
+                                }
+
+                                existing.IsVoided = true;
+                                existing.VoidedBy = row.VoidedBy;
+                                existing.VoidedDate = row.VoidedDate;
+                            }
+
+                            await _dbContext.SaveChangesAsync(cancellationToken);
+
+                            var findCashReceiptBook = await _dbContext.CashReceiptBooks.AnyAsync(crb => crb.RefNo == row.CollectionReceiptNo, cancellationToken);
+                            var findGeneralLedgerBook = await _dbContext.GeneralLedgerBooks.AnyAsync(gl => gl.Reference == row.CollectionReceiptNo, cancellationToken);
+
+                            if (findCashReceiptBook)
+                            {
+                                await _generalRepo.RemoveRecords<CashReceiptBook>(crb => crb.RefNo == row.CollectionReceiptNo, cancellationToken);
+                            }
+
+                            if (findGeneralLedgerBook)
+                            {
+                                await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == row.CollectionReceiptNo, cancellationToken);
+                            }
+
+                            var series = collectionReceipt.SINo ?? collectionReceipt.SVNo;
+                            var findOffsetting = await _dbContext.Offsettings
+                                .Where(offset => offset.Source == row.CollectionReceiptNo && offset.Reference == series)
+                                .ToListAsync(cancellationToken);
+                            if (findOffsetting.Any())
+                            {
+                                await _generalRepo.RemoveRecords<Offsetting>(offset => offset.Source == row.CollectionReceiptNo && offset.Reference == series, cancellationToken);
+                            }
+
+                            if ((!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default) || findCashReceiptBook || findGeneralLedgerBook)
+                            {
+                                var offsetAmount = findOffsetting.Sum(offset => offset.Amount);
+                                var voidSalesInvoiceId = collectionReceipt.SalesInvoiceId;
+                                var voidMultipleSIIds = collectionReceipt.MultipleSIId;
+                                var voidMultipleAmounts = collectionReceipt.SIMultipleAmount;
+                                var voidServiceInvoiceId = collectionReceipt.ServiceInvoiceId;
+
+                                if (collectionReceipt.SINo != null && voidSalesInvoiceId != null)
+                                {
+                                    if (await _dbContext.SalesInvoices.AnyAsync(x => x.SalesInvoiceId == voidSalesInvoiceId, cancellationToken))
+                                    {
+                                        await _receiptRepo.RemoveSIPayment(voidSalesInvoiceId.Value, collectionReceipt.Total, offsetAmount, cancellationToken);
+                                    }
+                                }
+                                else if (collectionReceipt.SVNo != null && voidServiceInvoiceId != null)
+                                {
+                                    if (await _dbContext.ServiceInvoices.AnyAsync(x => x.ServiceInvoiceId == voidServiceInvoiceId, cancellationToken))
+                                    {
+                                        await _receiptRepo.RemoveSVPayment(voidServiceInvoiceId, collectionReceipt.Total, offsetAmount, cancellationToken);
+                                    }
+                                }
+                                else if (collectionReceipt.MultipleSI != null && voidMultipleSIIds != null && voidMultipleAmounts != null)
+                                {
+                                    var presentInvoices = await _dbContext.SalesInvoices.CountAsync(x => voidMultipleSIIds.Contains(x.SalesInvoiceId), cancellationToken);
+                                    if (voidMultipleSIIds.Length == voidMultipleAmounts.Length && presentInvoices == voidMultipleSIIds.Length)
+                                    {
+                                        await _receiptRepo.RemoveMultipleSIPayment(voidMultipleSIIds, voidMultipleAmounts, offsetAmount, cancellationToken);
+                                    }
+                                }
                             }
                         }
                         await _receiptRepo.CheckSalesInvoiceAmountsAsync(row, lookup.ExistingLogs, cancellationToken);

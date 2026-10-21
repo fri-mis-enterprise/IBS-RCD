@@ -88,7 +88,7 @@ namespace Accounting_System.Models
 
         public bool IsValidated { get; set; }
 
-        [StringLength(20)]
+        [StringLength(200)]
         public string? ValidatedBy { get; set; }
 
         [Column(TypeName = "timestamp without time zone")]

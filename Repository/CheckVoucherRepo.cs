@@ -272,6 +272,7 @@ namespace Accounting_System.Repository
                 Reference = row.CvType == "Payment" ? getReference : string.Empty,
                 CreatedBy = row.CreatedBy,
                 CreatedDate = row.CreatedDate,
+                IsPosted = !string.IsNullOrEmpty(row.PostedBy),
                 PostedBy = row.PostedBy,
                 PostedDate = row.PostedDate,
                 Total = row.Total,
@@ -281,8 +282,10 @@ namespace Accounting_System.Repository
                 AmountPaid = row.AmountPaid,
                 IsPaid = row.IsPaid,
                 CancellationRemarks = row.CancellationRemarks,
+                IsCanceled = !string.IsNullOrEmpty(row.CanceledBy),
                 CanceledBy = row.CanceledBy,
                 CanceledDate = row.CanceledDate,
+                IsVoided = !string.IsNullOrEmpty(row.VoidedBy),
                 VoidedBy = row.VoidedBy,
                 VoidedDate = row.VoidedDate,
                 EditedBy = row.EditedBy,
@@ -892,6 +895,79 @@ namespace Accounting_System.Repository
                     .Select(x => x.First())
                     .ToDictionaryAsync(x => x.OriginalDocumentId, cancellationToken)
             };
+        }
+
+        public async Task GeneralLedgerBookPosting(CheckVoucherHeader header, CancellationToken cancellationToken)
+        {
+            var modelDetails = await _dbContext.CheckVoucherDetails
+                .Where(cvd => cvd.CheckVoucherHeaderId == header.CheckVoucherHeaderId)
+                .ToListAsync(cancellationToken);
+
+            var accountTitlesDto = await _generalRepo.GetListOfAccountTitleDto(cancellationToken);
+            var ledgers = new List<GeneralLedgerBook>();
+            foreach (var details in modelDetails)
+            {
+                var account = accountTitlesDto.Find(c => c.AccountNumber == details.AccountNo) ?? throw new ArgumentException($"Account title '{details.AccountNo}' not found.");
+                ledgers.Add(
+                        new GeneralLedgerBook
+                        {
+                            Date = header.Date,
+                            Reference = header.CheckVoucherHeaderNo!,
+                            Description = header.Particulars!,
+                            AccountNo = account.AccountNumber,
+                            AccountTitle = account.AccountName,
+                            Debit = details.Debit,
+                            Credit = details.Credit,
+                            CreatedBy = header.CreatedBy,
+                            CreatedDate = header.CreatedDate,
+                        }
+                    );
+            }
+
+            if (!_generalRepo.IsJournalEntriesBalanced(ledgers))
+            {
+                throw new ArgumentException("Debit and Credit is not equal, check your entries.");
+            }
+
+            await _dbContext.GeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
+        }
+
+        public async Task DisbursementBookPosting(CheckVoucherHeader header, CancellationToken cancellationToken)
+        {
+            var modelDetails = await _dbContext.CheckVoucherDetails
+                .Where(cvd => cvd.CheckVoucherHeaderId == header.CheckVoucherHeaderId)
+                .ToListAsync(cancellationToken);
+
+            var supplierName = await _dbContext.Suppliers
+                .Where(s => s.SupplierId == header.SupplierId)
+                .Select(s => s.SupplierName)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            var disbursement = new List<DisbursementBook>();
+            foreach (var details in modelDetails)
+            {
+                var bank = _dbContext.BankAccounts.FirstOrDefault(model => model.BankAccountId == header.BankId);
+                disbursement.Add(
+                        new DisbursementBook
+                        {
+                            Date = header.Date,
+                            CVNo = header.CheckVoucherHeaderNo!,
+                            Payee = header.Payee ?? supplierName!,
+                            Amount = header.Total,
+                            Particulars = header.Particulars!,
+                            Bank = bank != null ? bank.Bank : "N/A",
+                            CheckNo = !string.IsNullOrEmpty(header.CheckNo) ? header.CheckNo : "N/A",
+                            CheckDate = header.CheckDate != null ? header.CheckDate?.ToString("MM/dd/yyyy")! : "N/A",
+                            ChartOfAccount = details.AccountNo + " " + details.AccountName,
+                            Debit = details.Debit,
+                            Credit = details.Credit,
+                            CreatedBy = header.CreatedBy,
+                            CreatedDate = header.CreatedDate
+                        }
+                    );
+            }
+
+            await _dbContext.DisbursementBooks.AddRangeAsync(disbursement, cancellationToken);
         }
     }
 }

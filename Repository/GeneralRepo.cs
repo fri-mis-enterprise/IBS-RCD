@@ -195,6 +195,8 @@ namespace Accounting_System.Repository
                 "PET001" => ("101040100", "Inventory - Biodiesel"),
                 "PET002" => ("101040200", "Inventory - Econogas"),
                 "PET003" => ("101040300", "Inventory - Envirogas"),
+                "PET006" => ("101040400", "Inventory - Diesel"),
+                "PET007" => ("101040500", "Inventory - CME"),
                 _ => throw new ArgumentException($"Invalid product code: {productCode}"),
             };
         }
@@ -206,6 +208,7 @@ namespace Accounting_System.Repository
                 "PET001" => ("401010100", "Sales - Biodiesel"),
                 "PET002" => ("401010200", "Sales - Econogas"),
                 "PET003" => ("401010300", "Sales - Envirogas"),
+                "PET006" => ("401010400", "Sales - Diesel"),
                 _ => throw new ArgumentException($"Invalid product code: {productCode}"),
             };
         }

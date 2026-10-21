@@ -933,6 +933,36 @@ namespace Accounting_System.Controllers
                                 "IBS-RCD");
                         }
                     }
+                    if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                    {
+                        if (existing != null)
+                        {
+                            existing.IsPosted = true;
+                            existing.PostedBy = row.PostedBy;
+                            existing.PostedDate = row.PostedDate;
+                        }
+
+                        await _serviceInvoiceRepo.SalesBookPosting(row, cancellationToken);
+                        await _serviceInvoiceRepo.GeneralLedgerBookPosting(row, cancellationToken);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default)
+                    {
+                        if (existing != null)
+                        {
+                            if (existing.IsPosted)
+                            {
+                                existing.IsPosted = false;
+                            }
+
+                            existing.IsVoided = true;
+                            existing.VoidedBy = row.VoidedBy;
+                            existing.VoidedDate = row.VoidedDate;
+                        }
+
+                        await _generalRepo.RemoveRecords<SalesBook>(sb => sb.SerialNo == row.ServiceInvoiceNo, cancellationToken);
+                        await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == row.ServiceInvoiceNo, cancellationToken);
+                    }
                 }
 
                 _dbContext.ServiceInvoices.AddRange(serviceInvoices);

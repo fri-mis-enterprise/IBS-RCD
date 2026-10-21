@@ -289,12 +289,15 @@ namespace Accounting_System.Repository
                 CreatedBy = row.CreatedBy,
                 CreatedDate = row.CreatedDate,
 
+                IsPosted = !string.IsNullOrEmpty(row.PostedBy),
                 PostedBy = row.PostedBy,
                 PostedDate = row.PostedDate,
 
                 CancellationRemarks = row.CancellationRemarks,
+                IsCanceled = !string.IsNullOrEmpty(row.CanceledBy),
                 CanceledBy = row.CanceledBy,
                 CanceledDate = row.CanceledDate,
+                IsVoided = !string.IsNullOrEmpty(row.VoidedBy),
                 VoidedBy = row.VoidedBy,
                 VoidedDate = row.VoidedDate,
                 EditedBy = row.EditedBy,
@@ -501,6 +504,305 @@ namespace Accounting_System.Repository
                     .Where(x => originalSeriesNumbers.Contains(x.DocumentNo))
                     .ToListAsync(cancellationToken)
             };
+        }
+
+        public async Task SalesBookPosting(
+            SalesInvoiceUploadExcelFileViewModel row,
+            CancellationToken cancellationToken)
+        {
+            var customer = await _dbContext.Customers.FirstOrDefaultAsync(x => x.OriginalCustomerId == row.OriginalCustomerId, cancellationToken);
+            var product = await _dbContext.Products.FirstOrDefaultAsync(x => x.OriginalProductId == row.OriginalProductId, cancellationToken);
+
+            var salesBook = new SalesBook
+            {
+                TransactionDate = row.TransactionDate,
+                SerialNo = row.SalesInvoiceNo,
+                SoldTo = customer!.CustomerName,
+                TinNo = customer.CustomerTin,
+                Address = customer.CustomerAddress,
+                Description = product!.ProductName,
+                Amount = row.Amount - row.Discount,
+                Discount = row.Discount,
+                CreatedBy = row.CreatedBy,
+                CreatedDate = row.CreatedDate,
+                DueDate = row.DueDate,
+                VatableSales = customer.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(row.Amount) : row.Amount,
+                VatAmount = _generalRepo.ComputeVatAmount(customer.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(row.Amount) : row.Amount),
+                NetSales = customer.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(row.Amount) : row.Amount - row.Discount,
+            };
+
+            await _dbContext.SalesBooks.AddAsync(salesBook, cancellationToken);
+        }
+
+        public async Task GeneralLedgerBookPosting(
+            SalesInvoiceUploadExcelFileViewModel row,
+            CancellationToken cancellationToken)
+        {
+            var customer = _dbContext.Customers.FirstOrDefault(x => x.OriginalCustomerId == row.OriginalCustomerId);
+            var product = _dbContext.Products.FirstOrDefault(x => x.OriginalProductId == row.OriginalProductId);
+
+
+            decimal netDiscount = row.Amount - row.Discount;
+            decimal netOfVatAmount = customer.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(netDiscount) : netDiscount;
+            decimal vatAmount = customer.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeVatAmount(netOfVatAmount) : 0;
+            decimal withHoldingTaxAmount = customer.WithHoldingTax ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m) : 0;
+            decimal withHoldingVatAmount = customer.WithHoldingVat ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.05m) : 0;
+
+            var accountTitlesDto = await _generalRepo.GetListOfAccountTitleDto(cancellationToken);
+            var arTradeReceivableTitle = accountTitlesDto.Find(c => c.AccountNumber == "101020100") ?? throw new ArgumentException("Account number: '101020100', Account title: 'AR-Trade Receivable' not found.");
+            var arTradeCwt = accountTitlesDto.Find(c => c.AccountNumber == "101020200") ?? throw new ArgumentException("Account number: '101020200', Account title: 'AR-Trade Receivable - Creditable Withholding Tax' not found.");
+            var arTradeCwv = accountTitlesDto.Find(c => c.AccountNumber == "101020300") ?? throw new ArgumentException("Account number: '101020300', Account title: 'AR-Trade Receivable - Creditable Withholding Vat' not found.");
+            var (salesAcctNo, _) = _generalRepo.GetSalesAccountTitle(product.ProductCode!);
+            var salesTitle = accountTitlesDto.Find(c => c.AccountNumber == salesAcctNo) ?? throw new ArgumentException($"Account title '{salesAcctNo}' not found.");
+            var vatOutputTitle = accountTitlesDto.Find(c => c.AccountNumber == "201030100") ?? throw new ArgumentException("Account number: '201030100', Account title: 'Vat - Output' not found.");
+
+
+            var ledgers = new List<GeneralLedgerBook>
+            {
+                new()
+                {
+                    Date = row.TransactionDate,
+                    Reference = row.SalesInvoiceNo!,
+                    Description = product.ProductName,
+                    AccountNo = arTradeReceivableTitle.AccountNumber,
+                    AccountTitle = arTradeReceivableTitle.AccountName,
+                    Debit = netDiscount - (withHoldingTaxAmount + withHoldingVatAmount),
+                    Credit = 0,
+                    CreatedBy = row.CreatedBy,
+                    CreatedDate = row.CreatedDate
+                }
+            };
+
+            if (withHoldingTaxAmount > 0)
+            {
+                ledgers.Add(
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.SalesInvoiceNo!,
+                        Description = product.ProductName,
+                        AccountNo = arTradeCwt.AccountNumber,
+                        AccountTitle = arTradeCwt.AccountName,
+                        Debit = withHoldingTaxAmount,
+                        Credit = 0,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+            }
+            if (withHoldingVatAmount > 0)
+            {
+                ledgers.Add(
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.SalesInvoiceNo!,
+                        Description = product.ProductName,
+                        AccountNo = arTradeCwv.AccountNumber,
+                        AccountTitle = arTradeCwv.AccountName,
+                        Debit = withHoldingVatAmount,
+                        Credit = 0,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+            }
+            ledgers.Add(
+                new GeneralLedgerBook
+                {
+                    Date = row.TransactionDate,
+                    Reference = row.SalesInvoiceNo!,
+                    Description = product.ProductName,
+                    AccountNo = salesTitle.AccountNumber,
+                    AccountTitle = salesTitle.AccountName,
+                    Debit = 0,
+                    Credit = netOfVatAmount,
+                    CreatedBy = row.CreatedBy,
+                    CreatedDate = row.CreatedDate
+                }
+            );
+            if (vatAmount > 0)
+            {
+                ledgers.Add(
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.SalesInvoiceNo!,
+                        Description = product.ProductName,
+                        AccountNo = vatOutputTitle.AccountNumber,
+                        AccountTitle = vatOutputTitle.AccountName,
+                        Debit = 0,
+                        Credit = vatAmount,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+            }
+
+            if (!_generalRepo.IsJournalEntriesBalanced(ledgers))
+            {
+                throw new ArgumentException("Debit and Credit is not equal, check your entries.");
+            }
+
+            await _dbContext.GeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
+        }
+
+        public async Task AddSalesToInventoryBookAsync(SalesInvoiceUploadExcelFileViewModel row, CancellationToken cancellationToken = default)
+        {
+            var product = _dbContext.Products.FirstOrDefault(x => x.OriginalProductId == row.OriginalProductId);
+
+            var sortedInventory = await _dbContext.Inventories
+            .Where(i => i.ProductId == product.ProductId)
+            .OrderBy(i => i.Date)
+            .ThenBy(i => i.Id)
+            .ToListAsync(cancellationToken);
+
+            var lastIndex = sortedInventory.FindLastIndex(s => s.Date <= row.TransactionDate);
+            if (lastIndex >= 0)
+            {
+                sortedInventory = sortedInventory.Skip(lastIndex).ToList();
+            }
+            else
+            {
+                throw new ArgumentException($"Beginning inventory for {product.ProductName} not found!");
+            }
+
+            var previousInventory = sortedInventory.FirstOrDefault();
+
+            if (previousInventory != null)
+            {
+                if (previousInventory.InventoryBalance < row.Quantity)
+                {
+                    throw new InvalidOperationException($"The quantity exceeds the available inventory of '{product.ProductName}'.");
+                }
+
+                decimal total = row.Quantity * previousInventory.AverageCost;
+                decimal inventoryBalance = previousInventory.InventoryBalance - row.Quantity;
+                decimal totalBalance = previousInventory.TotalBalance - total;
+                decimal averageCost = inventoryBalance != 0 && totalBalance != 0 ? totalBalance / inventoryBalance : previousInventory.AverageCost;
+
+                Inventory inventory = new()
+                {
+                    Date = row.TransactionDate,
+                    ProductId = product.ProductId,
+                    Particular = "Sales",
+                    Reference = row.SalesInvoiceNo,
+                    Quantity = row.Quantity,
+                    Cost = previousInventory.AverageCost,
+                    IsValidated = true,
+                    ValidatedBy = row.PostedBy,
+                    ValidatedDate = DateTime.Now,
+                    Total = total,
+                    InventoryBalance = inventoryBalance,
+                    TotalBalance = totalBalance,
+                    AverageCost = averageCost
+                };
+
+
+                foreach (var transaction in sortedInventory.Skip(1))
+                {
+                    if (transaction.Particular == "Sales")
+                    {
+                        transaction.Cost = averageCost;
+                        transaction.Total = transaction.Quantity * averageCost;
+                        transaction.TotalBalance = totalBalance != 0 ? totalBalance - transaction.Total : transaction.Total;
+                        transaction.InventoryBalance = inventoryBalance != 0 ? inventoryBalance - transaction.Quantity : transaction.Quantity;
+                        transaction.AverageCost = transaction.TotalBalance != 0 && transaction.InventoryBalance != 0 ? transaction.TotalBalance / transaction.InventoryBalance : averageCost;
+                        var costOfGoodsSold = transaction.AverageCost * transaction.Quantity;
+
+                        averageCost = transaction.AverageCost;
+                        totalBalance = transaction.TotalBalance;
+                        inventoryBalance = transaction.InventoryBalance;
+
+                        var journalEntries = await _dbContext.GeneralLedgerBooks
+                            .Where(j => j.Reference == transaction.Reference &&
+                                        (j.AccountNo.StartsWith("50101") || j.AccountNo.StartsWith("10104")))
+                            .ToListAsync(cancellationToken);
+
+                        if (journalEntries.Count != 0)
+                        {
+                            foreach (var journal in journalEntries)
+                            {
+                                if (journal.Debit != 0)
+                                {
+                                    if (journal.Debit != costOfGoodsSold)
+                                    {
+                                        journal.Debit = costOfGoodsSold;
+                                        journal.Credit = 0;
+                                    }
+                                }
+                                else
+                                {
+                                    if (journal.Credit != costOfGoodsSold)
+                                    {
+                                        journal.Credit = costOfGoodsSold;
+                                        journal.Debit = 0;
+                                    }
+                                }
+                            }
+                        }
+
+                        _dbContext.GeneralLedgerBooks.UpdateRange(journalEntries);
+
+                    }
+                    else if (transaction.Particular == "Purchases")
+                    {
+                        transaction.TotalBalance = totalBalance + transaction.Total;
+                        transaction.InventoryBalance = inventoryBalance + transaction.Quantity;
+                        transaction.AverageCost = transaction.TotalBalance != 0 && transaction.InventoryBalance != 0 ? transaction.TotalBalance / transaction.InventoryBalance : averageCost;
+
+                        averageCost = transaction.AverageCost;
+                        totalBalance = transaction.TotalBalance;
+                        inventoryBalance = transaction.InventoryBalance;
+                    }
+                }
+
+                var ledgers = new List<GeneralLedgerBook>
+                {
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.SalesInvoiceNo!,
+                        Description = product.ProductName,
+                        AccountNo = product.ProductCode == "PET001" ? "501010100" : product.ProductCode == "PET002" ? "501010200" : "501010300",
+                        AccountTitle = product.ProductCode == "PET001" ? "COGS - Biodiesel" : product.ProductCode == "PET002" ? "COGS - Econogas" : "COGS - Envirogas",
+                        Debit = inventory.Total,
+                        Credit = 0,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    },
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.SalesInvoiceNo!,
+                        Description = product.ProductName,
+                        AccountNo = product.ProductCode == "PET001" ? "101040100" : product.ProductCode == "PET002" ? "101040200" : "101040300",
+                        AccountTitle = product.ProductCode == "PET001" ? "Inventory - Biodiesel" : product.ProductCode == "PET002" ? "Inventory - Econogas" : "Inventory - Envirogas",
+                        Debit = 0,
+                        Credit = inventory.Total,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                };
+
+                _dbContext.Inventories.UpdateRange(sortedInventory);
+
+                if (_generalRepo.IsJournalEntriesBalanced(ledgers))
+                {
+                    await _dbContext.Inventories.AddAsync(inventory, cancellationToken);
+                    await _dbContext.GeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
+                }
+                else
+                {
+                    throw new ArgumentException("Debit and Credit is not equal, check your entries.");
+                }
+
+
+            }
+            else
+            {
+                throw new InvalidOperationException($"Beginning inventory for this product '{product.ProductName}' not found!");
+            }
         }
     }
 }

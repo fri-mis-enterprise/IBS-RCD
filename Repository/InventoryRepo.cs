@@ -71,7 +71,7 @@ namespace Accounting_System.Repository
 
         public async Task AddPurchaseToInventoryAsync(ReceivingReport receivingReport, ClaimsPrincipal user, CancellationToken cancellationToken = default)
         {
-            var createdBy = await _generalRepo.GetUserFullNameAsync(user.Identity!.Name!);
+            var createdBy = receivingReport.PostedBy ?? await _generalRepo.GetUserFullNameAsync(user.Identity!.Name!);
             var sortedInventory = await _dbContext.Inventories
             .Where(i => i.ProductId == receivingReport.PurchaseOrder!.Product!.ProductId)
             .OrderBy(i => i.Date)
@@ -315,7 +315,6 @@ namespace Accounting_System.Repository
                 {
                     await _dbContext.Inventories.AddAsync(inventory, cancellationToken);
                     await _dbContext.GeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
                 }
                 else
                 {
@@ -841,7 +840,7 @@ namespace Accounting_System.Repository
             .ThenBy(i => i.Id)
             .ToListAsync(cancellationToken);
 
-            sortedInventory.Remove(model);
+            //sortedInventory.Remove(model);
 
             if (sortedInventory.Count != 0)
             {

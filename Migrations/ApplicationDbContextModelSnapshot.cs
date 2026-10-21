@@ -17,7 +17,7 @@ namespace Accounting_System.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.2")
+                .HasAnnotation("ProductVersion", "10.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -151,7 +151,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("accrued_type");
 
-                    b.Property<decimal[]>("Amount")
+                    b.PrimitiveCollection<decimal[]>("Amount")
                         .HasColumnType("numeric(18,4)[]")
                         .HasColumnName("amount");
 
@@ -291,7 +291,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("original_supplier_id");
 
-                    b.Property<string[]>("PONo")
+                    b.PrimitiveCollection<string[]>("PONo")
                         .HasColumnType("varchar[]")
                         .HasColumnName("po_no");
 
@@ -314,7 +314,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("posted_date");
 
-                    b.Property<string[]>("RRNo")
+                    b.PrimitiveCollection<string[]>("RRNo")
                         .HasColumnType("varchar[]")
                         .HasColumnName("rr_no");
 
@@ -323,7 +323,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("reference");
 
-                    b.Property<string[]>("SINo")
+                    b.PrimitiveCollection<string[]>("SINo")
                         .HasColumnType("varchar[]")
                         .HasColumnName("si_no");
 
@@ -548,8 +548,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("price");
 
-                    b.Property<int?>("ProductId")
-                        .IsRequired()
+                    b.Property<int>("ProductId")
                         .HasColumnType("integer")
                         .HasColumnName("product_id");
 
@@ -581,8 +580,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("remarks");
 
-                    b.Property<int?>("SupplierId")
-                        .IsRequired()
+                    b.Property<int>("SupplierId")
                         .HasColumnType("integer")
                         .HasColumnName("supplier_id");
 
@@ -718,8 +716,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("other_ref");
 
-                    b.Property<int?>("POId")
-                        .IsRequired()
+                    b.Property<int>("POId")
                         .HasColumnType("integer")
                         .HasColumnName("po_id");
 
@@ -860,8 +857,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("created_date");
 
-                    b.Property<int?>("CustomerId")
-                        .IsRequired()
+                    b.Property<int>("CustomerId")
                         .HasColumnType("integer")
                         .HasColumnName("customer_id");
 
@@ -931,15 +927,15 @@ namespace Accounting_System.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("manager_check_no");
 
-                    b.Property<string[]>("MultipleSI")
+                    b.PrimitiveCollection<string[]>("MultipleSI")
                         .HasColumnType("text[]")
                         .HasColumnName("multiple_si");
 
-                    b.Property<int[]>("MultipleSIId")
+                    b.PrimitiveCollection<int[]>("MultipleSIId")
                         .HasColumnType("integer[]")
                         .HasColumnName("multiple_si_id");
 
-                    b.Property<DateOnly[]>("MultipleTransactionDate")
+                    b.PrimitiveCollection<DateOnly[]>("MultipleTransactionDate")
                         .HasColumnType("date[]")
                         .HasColumnName("multiple_transaction_date");
 
@@ -983,7 +979,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("remarks");
 
-                    b.Property<decimal[]>("SIMultipleAmount")
+                    b.PrimitiveCollection<decimal[]>("SIMultipleAmount")
                         .HasColumnType("numeric(18,4)[]")
                         .HasColumnName("si_multiple_amount");
 
@@ -1421,8 +1417,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("created_date");
 
-                    b.Property<int?>("CustomerId")
-                        .IsRequired()
+                    b.Property<int>("CustomerId")
                         .HasColumnType("integer")
                         .HasColumnName("customer_id");
 
@@ -1498,8 +1493,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("posted_date");
 
-                    b.Property<int?>("ProductId")
-                        .IsRequired()
+                    b.Property<int>("ProductId")
                         .HasColumnType("integer")
                         .HasColumnName("product_id");
 
@@ -1600,8 +1594,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("current_and_previous_amount");
 
-                    b.Property<int?>("CustomerId")
-                        .IsRequired()
+                    b.Property<int>("CustomerId")
                         .HasColumnType("integer")
                         .HasColumnName("customer_id");
 
@@ -1685,8 +1678,7 @@ namespace Accounting_System.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("service_no");
 
-                    b.Property<int?>("ServicesId")
-                        .IsRequired()
+                    b.Property<int>("ServicesId")
                         .HasColumnType("integer")
                         .HasColumnName("services_id");
 
@@ -2037,8 +2029,8 @@ namespace Accounting_System.Migrations
                         .HasColumnName("unit");
 
                     b.Property<string>("ValidatedBy")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("validated_by");
 
                     b.Property<DateTime?>("ValidatedDate")
@@ -2548,8 +2540,8 @@ namespace Accounting_System.Migrations
 
                     b.Property<string>("Particulars")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
                         .HasColumnName("particulars");
 
                     b.Property<string>("RefNo")

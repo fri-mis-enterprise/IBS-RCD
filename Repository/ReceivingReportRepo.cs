@@ -533,11 +533,14 @@ namespace Accounting_System.Repository
                 Remarks = row.Remarks,
                 CreatedBy = row.CreatedBy,
                 CreatedDate = row.CreatedDate,
+                IsPosted = !string.IsNullOrEmpty(row.PostedBy),
                 PostedBy = row.PostedBy,
                 PostedDate = row.PostedDate,
                 CancellationRemarks = row.CancellationRemarks,
+                IsCanceled = !string.IsNullOrEmpty(row.CanceledBy),
                 CanceledBy = row.CanceledBy,
                 CanceledDate = row.CanceledDate,
+                IsVoided = !string.IsNullOrEmpty(row.VoidedBy),
                 VoidedBy = row.VoidedBy,
                 VoidedDate = row.VoidedDate,
                 EditedBy = row.EditedBy,
@@ -644,9 +647,25 @@ namespace Accounting_System.Repository
                 StringHelper.NormalizeString(entity.SupplierInvoiceNumber),
                 row.SupplierInvoiceNumber);
 
+            var dateStringOriginal = string.IsNullOrWhiteSpace(entity.SupplierInvoiceDate)
+                ? DateOnly.MinValue.ToString(CS.DateOnly_Format_For_Validation)
+                : entity.SupplierInvoiceDate;
+
+            var dateStringAdjusted = string.IsNullOrWhiteSpace(entity.SupplierInvoiceDate)
+                ? DateOnly.MinValue.ToString(CS.DateOnly_Format_For_Validation)
+                : entity.SupplierInvoiceDate;
+
+            var original = double.TryParse(dateStringOriginal, out var serial)
+                ? DateOnly.FromDateTime(DateTime.FromOADate(serial))
+                : DateOnly.ParseExact(dateStringOriginal, "yyyy-MM-dd");
+
+            var adjusted = double.TryParse(dateStringAdjusted, out var serials)
+                ? DateOnly.FromDateTime(DateTime.FromOADate(serials))
+                : DateOnly.ParseExact(dateStringAdjusted, "yyyy-MM-dd");
+
             _generalRepo.Compare(changes, logs, "SupplierInvoiceDate",
-                StringHelper.NormalizeString(entity.SupplierInvoiceDate),
-                row.SupplierInvoiceDate);
+                StringHelper.NormalizeString(original.ToString(CS.DateOnly_Format_For_Validation)),
+                StringHelper.NormalizeString(adjusted.ToString(CS.DateOnly_Format_For_Validation)));
 
             _generalRepo.Compare(changes, logs, "TruckOrVessels",
                 StringHelper.NormalizeString(entity.TruckOrVessels),

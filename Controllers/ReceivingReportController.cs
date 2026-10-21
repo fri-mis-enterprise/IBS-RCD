@@ -904,7 +904,8 @@ namespace Accounting_System.Controllers
                                 continue;
                             }
 
-                            receivingReports.Add(_receivingReportRepo.MapToReceivingReportEntity(row, lookup));
+                            existing = _receivingReportRepo.MapToReceivingReportEntity(row, lookup);
+                            receivingReports.Add(existing);
                             auditTrails.AddRange(_receivingReportRepo.AuditTrails(row, ipAddress ?? string.Empty));
                         }
                         else
@@ -919,6 +920,46 @@ namespace Accounting_System.Controllers
                                     existing.ReceivingReportNo,
                                     "IBS-RCD");
                             }
+                        }
+                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && row.ReceivedDate != default)
+                        {
+                            if (existing != null)
+                            {
+                                existing.IsPosted = true;
+                                existing.PostedBy = row.PostedBy;
+                                existing.PostedDate = row.PostedDate;
+                            }
+
+                            if (existing.PurchaseOrder == null)
+                            {
+                                existing.PurchaseOrder = await _receivingReportRepo.GetPurchaseOrderAsync(existing.POId.Value, cancellationToken);
+                            }
+
+                            await _receivingReportRepo.PostAsync(existing, User, cancellationToken);
+                        }
+
+                        var existingInventory = await _dbContext.Inventories
+                            .Include(i => i.Product)
+                            .FirstOrDefaultAsync(i => i.Reference == row.ReceivingReportNo, cancellationToken: cancellationToken);
+                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && existingInventory != null)
+                        {
+                            if (existing != null)
+                            {
+                                if (existing.IsPosted)
+                                {
+                                    existing.IsPosted = false;
+                                }
+
+                                existing.IsVoided = true;
+                                existing.VoidedBy = row.VoidedBy;
+                                existing.VoidedDate = row.VoidedDate;
+                            }
+
+                            await _generalRepo.RemoveRecords<PurchaseJournalBook>(pb => pb.DocumentNo == row.ReceivingReportNo, cancellationToken);
+                            await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == row.ReceivingReportNo, cancellationToken);
+                            await _inventoryRepo.VoidInventory(existingInventory, cancellationToken);
+                            await _receivingReportRepo.RemoveQuantityReceived(existing.POId, existing.QuantityReceived, cancellationToken);
+                            existing.QuantityReceived = 0;
                         }
                     }
 

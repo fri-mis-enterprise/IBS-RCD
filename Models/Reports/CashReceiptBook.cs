@@ -32,7 +32,7 @@ namespace Accounting_System.Models.Reports
         [Display(Name = "Chart of Account")]
         public string COA { get; set; }
 
-        [StringLength(1000)]
+        [StringLength(2000)]
         public string Particulars { get; set; }
 
         [DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]

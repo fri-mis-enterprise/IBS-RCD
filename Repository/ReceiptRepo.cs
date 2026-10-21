@@ -905,11 +905,16 @@ namespace Accounting_System.Repository
                 F2307FilePath = row.F2307FilePath,
                 CreatedBy = row.CreatedBy,
                 CreatedDate = row.CreatedDate,
+
+                IsPosted = !string.IsNullOrEmpty(row.PostedBy),
                 PostedBy = row.PostedBy,
                 PostedDate = row.PostedDate,
+
                 CancellationRemarks = row.CancellationRemarks,
+                IsCanceled = !string.IsNullOrEmpty(row.CanceledBy),
                 CanceledBy = row.CanceledBy,
                 CanceledDate = row.CanceledDate,
+                IsVoided = !string.IsNullOrEmpty(row.VoidedBy),
                 VoidedBy = row.VoidedBy,
                 VoidedDate = row.VoidedDate,
                 EditedBy = row.EditedBy,
@@ -1235,6 +1240,263 @@ namespace Accounting_System.Repository
                     row.OriginalSeriesNumber,
                     "IBS-RCD");
             }
+        }
+
+        public async Task CollectionReceiptPosting(
+            CollectionReceiptUploadExcelFileViewModel row,
+            CancellationToken cancellationToken)
+        {
+            var ledgers = new List<GeneralLedgerBook>();
+            var accountTitlesDto = await _generalRepo.GetListOfAccountTitleDto(cancellationToken);
+            var cashInBankTitle = accountTitlesDto.Find(c => c.AccountNumber == "101010100") ?? throw new ArgumentException("Account title '101010100' not found.");
+            var arTradeTitle = accountTitlesDto.Find(c => c.AccountNumber == "101020100") ?? throw new ArgumentException("Account title '101020100' not found.");
+            var arTradeCwt = accountTitlesDto.Find(c => c.AccountNumber == "101020200") ?? throw new ArgumentException("Account title '101020200' not found.");
+            var arTradeCwv = accountTitlesDto.Find(c => c.AccountNumber == "101020300") ?? throw new ArgumentException("Account title '101020300' not found.");
+            var cwt = accountTitlesDto.Find(c => c.AccountNumber == "101060400") ?? throw new ArgumentException("Account title '101060400' not found.");
+            var cwv = accountTitlesDto.Find(c => c.AccountNumber == "101060600") ?? throw new ArgumentException("Account title '101060600' not found.");
+            var offsetAmount = 0m;
+
+            var salesInvoice = row.OriginalSalesInvoiceId != 0
+                ? await _dbContext.SalesInvoices.Include(x => x.Customer).FirstOrDefaultAsync(x => x.OriginalDocumentId == row.OriginalSalesInvoiceId, cancellationToken)
+                : null;
+            var serviceInvoice = row.OriginalServiceInvoiceId != 0
+                ? await _dbContext.ServiceInvoices.Include(x => x.Customer).FirstOrDefaultAsync(x => x.OriginalDocumentId == row.OriginalServiceInvoiceId, cancellationToken)
+                : null;
+            var customer = await _dbContext.Customers.FirstOrDefaultAsync(x => x.OriginalCustomerId == row.OriginalCustomerId, cancellationToken);
+
+            var customerName = salesInvoice != null ? salesInvoice.Customer!.CustomerName : row.MultipleSIId != null ? customer!.CustomerName : serviceInvoice!.Customer!.CustomerName;
+            var particulars = (salesInvoice != null ? salesInvoice.SalesInvoiceNo : row.MultipleSIId != null ? string.Join(", ", row.MultipleSI!) : serviceInvoice!.ServiceInvoiceNo)!;
+            var bank = row.CheckBank ?? (row.ManagerCheckBank ?? "--");
+            var checkNo = row.CheckNo ?? (row.ManagerCheckNo ?? "--");
+
+            if (row.CashAmount > 0 || row.CheckAmount > 0 || row.ManagerCheckAmount > 0)
+            {
+                ledgers.Add(
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.CollectionReceiptNo!,
+                        Description = "Collection for Receivable",
+                        AccountNo = cashInBankTitle.AccountNumber,
+                        AccountTitle = cashInBankTitle.AccountName,
+                        Debit = row.CashAmount + row.CheckAmount + row.ManagerCheckAmount,
+                        Credit = 0,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+            }
+
+            if (row.EWT > 0)
+            {
+                ledgers.Add(
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.CollectionReceiptNo!,
+                        Description = "Collection for Receivable",
+                        AccountNo = cwt.AccountNumber,
+                        AccountTitle = cwt.AccountName,
+                        Debit = row.EWT,
+                        Credit = 0,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+            }
+
+            if (row.WVAT > 0)
+            {
+                ledgers.Add(
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.CollectionReceiptNo!,
+                        Description = "Collection for Receivable",
+                        AccountNo = cwv.AccountNumber,
+                        AccountTitle = cwv.AccountName,
+                        Debit = row.WVAT,
+                        Credit = 0,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+            }
+
+            if (row.CashAmount > 0 || row.CheckAmount > 0 || row.ManagerCheckAmount > 0 || offsetAmount > 0)
+            {
+                ledgers.Add(
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.CollectionReceiptNo!,
+                        Description = "Collection for Receivable",
+                        AccountNo = arTradeTitle.AccountNumber,
+                        AccountTitle = arTradeTitle.AccountName,
+                        Debit = 0,
+                        Credit = row.CashAmount + row.CheckAmount + row.ManagerCheckAmount + offsetAmount,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate,
+                    }
+                );
+            }
+
+            if (row.EWT > 0)
+            {
+                ledgers.Add(
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.CollectionReceiptNo!,
+                        Description = "Collection for Receivable",
+                        AccountNo = arTradeCwt.AccountNumber,
+                        AccountTitle = arTradeCwt.AccountName,
+                        Debit = 0,
+                        Credit = row.EWT,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+            }
+
+            if (row.WVAT > 0)
+            {
+                ledgers.Add(
+                    new GeneralLedgerBook
+                    {
+                        Date = row.TransactionDate,
+                        Reference = row.CollectionReceiptNo!,
+                        Description = "Collection for Receivable",
+                        AccountNo = arTradeCwv.AccountNumber,
+                        AccountTitle = arTradeCwv.AccountName,
+                        Debit = 0,
+                        Credit = row.WVAT,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+            }
+
+            await _dbContext.GeneralLedgerBooks.AddRangeAsync(ledgers, cancellationToken);
+
+            var crb = new List<CashReceiptBook>();
+
+            crb.Add(
+                new CashReceiptBook
+                {
+                    Date = row.TransactionDate,
+                    RefNo = row.CollectionReceiptNo!,
+                    CustomerName = customerName,
+                    Bank = bank,
+                    CheckNo = checkNo,
+                    COA = $"{cashInBankTitle.AccountNumber} {cashInBankTitle.AccountName}",
+                    Particulars = particulars,
+                    Debit = row.CashAmount + row.CheckAmount + row.ManagerCheckAmount,
+                    Credit = 0,
+                    CreatedBy = row.CreatedBy,
+                    CreatedDate = row.CreatedDate
+                }
+
+            );
+
+            if (row.EWT > 0)
+            {
+                crb.Add(
+                    new CashReceiptBook
+                    {
+                        Date = row.TransactionDate,
+                        RefNo = row.CollectionReceiptNo!,
+                        CustomerName = customerName,
+                        Bank = bank,
+                        CheckNo = checkNo,
+                        COA = $"{cwt.AccountNumber} {cwt.AccountName}",
+                        Particulars = particulars,
+                        Debit = row.EWT,
+                        Credit = 0,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+            }
+
+            if (row.WVAT > 0)
+            {
+                crb.Add(
+                    new CashReceiptBook
+                    {
+                        Date = row.TransactionDate,
+                        RefNo = row.CollectionReceiptNo!,
+                        CustomerName = customerName,
+                        Bank = bank,
+                        CheckNo = checkNo,
+                        COA = $"{cwv.AccountNumber} {cwv.AccountName}",
+                        Particulars = particulars,
+                        Debit = row.WVAT,
+                        Credit = 0,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+            }
+
+            crb.Add(
+                new CashReceiptBook
+                {
+                    Date = row.TransactionDate,
+                    RefNo = row.CollectionReceiptNo!,
+                    CustomerName = customerName,
+                    Bank = bank,
+                    CheckNo = checkNo,
+                    COA = $"{arTradeTitle.AccountNumber} {arTradeTitle.AccountName}",
+                    Particulars = particulars,
+                    Debit = 0,
+                    Credit = row.CashAmount + row.CheckAmount + row.ManagerCheckAmount + offsetAmount,
+                    CreatedBy = row.CreatedBy,
+                    CreatedDate = row.CreatedDate
+                }
+            );
+
+            if (row.EWT > 0)
+            {
+                crb.Add(
+                    new CashReceiptBook
+                    {
+                        Date = row.TransactionDate,
+                        RefNo = row.CollectionReceiptNo!,
+                        CustomerName = customerName,
+                        Bank = bank,
+                        CheckNo = checkNo,
+                        COA = $"{arTradeCwt.AccountNumber} {arTradeCwt.AccountName}",
+                        Particulars = particulars,
+                        Debit = 0,
+                        Credit = row.EWT,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+            }
+
+            if (row.WVAT > 0)
+            {
+                crb.Add(
+                    new CashReceiptBook
+                    {
+                        Date = row.TransactionDate,
+                        RefNo = row.CollectionReceiptNo!,
+                        CustomerName = customerName,
+                        Bank = bank,
+                        CheckNo = checkNo,
+                        COA = $"{arTradeCwv.AccountNumber} {arTradeCwv.AccountName}",
+                        Particulars = particulars,
+                        Debit = 0,
+                        Credit = row.WVAT,
+                        CreatedBy = row.CreatedBy,
+                        CreatedDate = row.CreatedDate
+                    }
+                );
+            }
+
+            await _dbContext.AddRangeAsync(crb, cancellationToken);
         }
     }
 }
