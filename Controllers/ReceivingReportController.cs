@@ -897,7 +897,8 @@ namespace Accounting_System.Controllers
 
                     foreach (var row in rows)
                     {
-                        if (!lookup.ExistingReceivingReport.TryGetValue(row.OriginalSeriesNumber, out var existing))
+                        var hasReceivingReport = lookup.ExistingReceivingReport.TryGetValue(row.OriginalSeriesNumber, out var existing);
+                        if (!hasReceivingReport)
                         {
                             if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
                             {
@@ -921,14 +922,11 @@ namespace Accounting_System.Controllers
                                     "IBS-RCD");
                             }
                         }
-                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && row.ReceivedDate != default)
+                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && row.ReceivedDate != default && !hasReceivingReport)
                         {
-                            if (existing != null)
-                            {
-                                existing.IsPosted = true;
-                                existing.PostedBy = row.PostedBy;
-                                existing.PostedDate = row.PostedDate;
-                            }
+                            existing.IsPosted = true;
+                            existing.PostedBy = row.PostedBy;
+                            existing.PostedDate = row.PostedDate;
 
                             if (existing.PurchaseOrder == null)
                             {
@@ -941,19 +939,16 @@ namespace Accounting_System.Controllers
                         var existingInventory = await _dbContext.Inventories
                             .Include(i => i.Product)
                             .FirstOrDefaultAsync(i => i.Reference == row.ReceivingReportNo, cancellationToken: cancellationToken);
-                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && existingInventory != null)
+                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && existingInventory != null && !hasReceivingReport)
                         {
-                            if (existing != null)
+                            if (existing.IsPosted)
                             {
-                                if (existing.IsPosted)
-                                {
-                                    existing.IsPosted = false;
-                                }
-
-                                existing.IsVoided = true;
-                                existing.VoidedBy = row.VoidedBy;
-                                existing.VoidedDate = row.VoidedDate;
+                                existing.IsPosted = false;
                             }
+
+                            existing.IsVoided = true;
+                            existing.VoidedBy = row.VoidedBy;
+                            existing.VoidedDate = row.VoidedDate;
 
                             await _generalRepo.RemoveRecords<PurchaseJournalBook>(pb => pb.DocumentNo == row.ReceivingReportNo, cancellationToken);
                             await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == row.ReceivingReportNo, cancellationToken);

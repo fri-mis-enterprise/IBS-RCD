@@ -910,14 +910,16 @@ namespace Accounting_System.Controllers
 
                 foreach (var row in rows)
                 {
-                    if (!lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing))
+                    var hasServiceInvoice = lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing);
+                    if (!hasServiceInvoice)
                     {
                         if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
                         {
                             continue;
                         }
 
-                        serviceInvoices.Add(_serviceInvoiceRepo.MapToServiceInvoiceEntity(row, lookup));
+                        existing = _serviceInvoiceRepo.MapToServiceInvoiceEntity(row, lookup);
+                        serviceInvoices.Add(existing);
                         auditTrails.AddRange(_serviceInvoiceRepo.AuditTrails(row, ipAddress ?? string.Empty));
                     }
                     else
@@ -933,32 +935,26 @@ namespace Accounting_System.Controllers
                                 "IBS-RCD");
                         }
                     }
-                    if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                    if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && !hasServiceInvoice)
                     {
-                        if (existing != null)
-                        {
-                            existing.IsPosted = true;
-                            existing.PostedBy = row.PostedBy;
-                            existing.PostedDate = row.PostedDate;
-                        }
+                        existing.IsPosted = true;
+                        existing.PostedBy = row.PostedBy;
+                        existing.PostedDate = row.PostedDate;
 
                         await _serviceInvoiceRepo.SalesBookPosting(row, cancellationToken);
                         await _serviceInvoiceRepo.GeneralLedgerBookPosting(row, cancellationToken);
                     }
 
-                    if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default)
+                    if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && !hasServiceInvoice)
                     {
-                        if (existing != null)
+                        if (existing.IsPosted)
                         {
-                            if (existing.IsPosted)
-                            {
-                                existing.IsPosted = false;
-                            }
-
-                            existing.IsVoided = true;
-                            existing.VoidedBy = row.VoidedBy;
-                            existing.VoidedDate = row.VoidedDate;
+                            existing.IsPosted = false;
                         }
+
+                        existing.IsVoided = true;
+                        existing.VoidedBy = row.VoidedBy;
+                        existing.VoidedDate = row.VoidedDate;
 
                         await _generalRepo.RemoveRecords<SalesBook>(sb => sb.SerialNo == row.ServiceInvoiceNo, cancellationToken);
                         await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == row.ServiceInvoiceNo, cancellationToken);

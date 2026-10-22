@@ -2437,7 +2437,8 @@ namespace Accounting_System.Controllers
                     foreach (var row in rows)
                     {
                         CollectionReceipt collectionReceipt;
-                        if (!lookup.ExistingCollectionReceipt.TryGetValue(row.OriginalSeriesNumber, out var existing))
+                        var hasCollectionReceipt = lookup.ExistingCollectionReceipt.TryGetValue(row.OriginalSeriesNumber, out var existing);
+                        if (!hasCollectionReceipt)
                         {
                             if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
                             {
@@ -2447,6 +2448,7 @@ namespace Accounting_System.Controllers
                             collectionReceipt = _receiptRepo.MapToCollectionReceiptEntity(row, lookup);
                             collectionReceipts.Add(collectionReceipt);
                             auditTrails.AddRange(_receiptRepo.AuditTrails(row, ipAddress ?? string.Empty));
+                            existing = collectionReceipt;
                         }
                         else
                         {
@@ -2464,14 +2466,11 @@ namespace Accounting_System.Controllers
 
                             collectionReceipt = existing;
                         }
-                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && !hasCollectionReceipt)
                         {
-                            if (existing != null)
-                            {
-                                existing.IsPosted = true;
-                                existing.PostedBy = row.PostedBy;
-                                existing.PostedDate = row.PostedDate;
-                            }
+                            existing.IsPosted = true;
+                            existing.PostedBy = row.PostedBy;
+                            existing.PostedDate = row.PostedDate;
 
                             await _receiptRepo.CollectionReceiptPosting(row, cancellationToken);
 
@@ -2505,19 +2504,16 @@ namespace Accounting_System.Controllers
                             }
                         }
 
-                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default)
+                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && !hasCollectionReceipt)
                         {
-                            if (existing != null)
+                            if (existing.IsPosted)
                             {
-                                if (existing.IsPosted)
-                                {
-                                    existing.IsPosted = false;
-                                }
-
-                                existing.IsVoided = true;
-                                existing.VoidedBy = row.VoidedBy;
-                                existing.VoidedDate = row.VoidedDate;
+                                existing.IsPosted = false;
                             }
+
+                            existing.IsVoided = true;
+                            existing.VoidedBy = row.VoidedBy;
+                            existing.VoidedDate = row.VoidedDate;
 
                             await _dbContext.SaveChangesAsync(cancellationToken);
 

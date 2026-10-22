@@ -1753,7 +1753,8 @@ namespace Accounting_System.Controllers
                         foreach (var row in rows)
                         {
                             JournalVoucherHeader header;
-                            if (!lookup.ExistingJournalVoucherHeader.TryGetValue(row.OriginalSeriesNumber, out var existing))
+                            var hasJournalVoucher = lookup.ExistingJournalVoucherHeader.TryGetValue(row.OriginalSeriesNumber, out var existing);
+                            if (!hasJournalVoucher)
                             {
                                 if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
                                 {
@@ -1780,14 +1781,11 @@ namespace Accounting_System.Controllers
                                 header = existing;
                             }
 
-                            if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                            if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && !hasJournalVoucher)
                             {
-                                if (existing != null)
-                                {
-                                    existing.IsPosted = true;
-                                    existing.PostedBy = row.PostedBy;
-                                    existing.PostedDate = row.PostedDate;
-                                }
+                                header.IsPosted = true;
+                                header.PostedBy = row.PostedBy;
+                                header.PostedDate = row.PostedDate;
 
                                 if (string.IsNullOrWhiteSpace(row.VoidedBy) || row.VoidedDate == default)
                                 {
@@ -1795,19 +1793,16 @@ namespace Accounting_System.Controllers
                                 }
                             }
 
-                            if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default)
+                            if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && !hasJournalVoucher)
                             {
-                                if (existing != null)
+                                if (header.IsPosted)
                                 {
-                                    if (existing.IsPosted)
-                                    {
-                                        existing.IsPosted = false;
-                                    }
-
-                                    existing.IsVoided = true;
-                                    existing.VoidedBy = row.VoidedBy;
-                                    existing.VoidedDate = row.VoidedDate;
+                                    header.IsPosted = false;
                                 }
+
+                                header.IsVoided = true;
+                                header.VoidedBy = row.VoidedBy;
+                                header.VoidedDate = row.VoidedDate;
 
                                 var findJournalVoucherInJournalBook = await _dbContext.JournalBooks.Where(jb => jb.Reference == header.JournalVoucherHeaderNo).ToListAsync(cancellationToken);
                                 var findJournalVoucherInGeneralLedger = await _dbContext.GeneralLedgerBooks.Where(jb => jb.Reference == header.JournalVoucherHeaderNo).ToListAsync(cancellationToken);

@@ -1477,14 +1477,16 @@ namespace Accounting_System.Controllers
 
                     foreach (var row in rows)
                     {
-                        if (!lookup.ExistingDebitMemo.TryGetValue(row.OriginalSeriesNumber, out var existing))
+                        var hasDebitMemo = lookup.ExistingDebitMemo.TryGetValue(row.OriginalSeriesNumber, out var existing);
+                        if (!hasDebitMemo)
                         {
                             if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
                             {
                                 continue;
                             }
 
-                            debitMemos.Add(_debitMemoRepo.MapToDebitMemoEntity(row, lookup));
+                            existing = _debitMemoRepo.MapToDebitMemoEntity(row, lookup);
+                            debitMemos.Add(existing);
                             auditTrails.AddRange(_debitMemoRepo.AuditTrails(row, ipAddress ?? string.Empty));
                         }
                         else
@@ -1500,32 +1502,26 @@ namespace Accounting_System.Controllers
                                     "IBS-RCD");
                             }
                         }
-                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && !hasDebitMemo)
                         {
-                            if (existing != null)
-                            {
-                                existing.IsPosted = true;
-                                existing.PostedBy = row.PostedBy;
-                                existing.PostedDate = row.PostedDate;
-                            }
+                            existing.IsPosted = true;
+                            existing.PostedBy = row.PostedBy;
+                            existing.PostedDate = row.PostedDate;
 
                             await _debitMemoRepo.SalesBookPosting(row, cancellationToken);
                             await _debitMemoRepo.GeneralLedgerBookPosting(row, cancellationToken);
                         }
 
-                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default)
+                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && !hasDebitMemo)
                         {
-                            if (existing != null)
+                            if (existing.IsPosted)
                             {
-                                if (existing.IsPosted)
-                                {
-                                    existing.IsPosted = false;
-                                }
-
-                                existing.IsVoided = true;
-                                existing.VoidedBy = row.VoidedBy;
-                                existing.VoidedDate = row.VoidedDate;
+                                existing.IsPosted = false;
                             }
+
+                            existing.IsVoided = true;
+                            existing.VoidedBy = row.VoidedBy;
+                            existing.VoidedDate = row.VoidedDate;
 
                             await _dbContext.SaveChangesAsync(cancellationToken);
 

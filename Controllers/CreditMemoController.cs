@@ -1521,14 +1521,16 @@ namespace Accounting_System.Controllers
 
                     foreach (var row in rows)
                     {
-                        if (!lookup.ExistingCreditMemo.TryGetValue(row.OriginalSeriesNumber, out var existing))
+                        var hasCreditMemo = lookup.ExistingCreditMemo.TryGetValue(row.OriginalSeriesNumber, out var existing);
+                        if (!hasCreditMemo)
                         {
                             if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
                             {
                                 continue;
                             }
 
-                            creditMemos.Add(_creditMemoRepo.MapToCreditMemoEntity(row, lookup));
+                            existing = _creditMemoRepo.MapToCreditMemoEntity(row, lookup);
+                            creditMemos.Add(existing);
                             auditTrails.AddRange(_creditMemoRepo.AuditTrails(row, ipAddress ?? string.Empty));
                         }
                         else
@@ -1544,32 +1546,26 @@ namespace Accounting_System.Controllers
                                     "IBS-RCD");
                             }
                         }
-                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && !hasCreditMemo)
                         {
-                            if (existing != null)
-                            {
-                                existing.IsPosted = true;
-                                existing.PostedBy = row.PostedBy;
-                                existing.PostedDate = row.PostedDate;
-                            }
+                            existing.IsPosted = true;
+                            existing.PostedBy = row.PostedBy;
+                            existing.PostedDate = row.PostedDate;
 
                             await _creditMemoRepo.SalesBookPosting(row, cancellationToken);
                             await _creditMemoRepo.GeneralLedgerBookPosting(row, cancellationToken);
                         }
 
-                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default)
+                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && !hasCreditMemo)
                         {
-                            if (existing != null)
+                            if (existing.IsPosted)
                             {
-                                if (existing.IsPosted)
-                                {
-                                    existing.IsPosted = false;
-                                }
-
-                                existing.IsVoided = true;
-                                existing.VoidedBy = row.VoidedBy;
-                                existing.VoidedDate = row.VoidedDate;
+                                existing.IsPosted = false;
                             }
+
+                            existing.IsVoided = true;
+                            existing.VoidedBy = row.VoidedBy;
+                            existing.VoidedDate = row.VoidedDate;
 
                             await _dbContext.SaveChangesAsync(cancellationToken);
 

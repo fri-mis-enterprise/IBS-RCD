@@ -832,14 +832,16 @@ namespace Accounting_System.Controllers
 
                 foreach (var row in rows)
                 {
-                    if (!lookup.ExistingPurchaseOrder.TryGetValue(row.OriginalSeriesNumber, out var existing))
+                    var hasPurchaseOrder = lookup.ExistingPurchaseOrder.TryGetValue(row.OriginalSeriesNumber, out var existing);
+                    if (!hasPurchaseOrder)
                     {
                         if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
                         {
                             continue;
                         }
 
-                        purchaseOrders.Add(_purchaseOrderRepo.MapToPurchaseOrderEntity(row, lookup));
+                        existing = _purchaseOrderRepo.MapToPurchaseOrderEntity(row, lookup);
+                        purchaseOrders.Add(existing);
                         auditTrails.AddRange(_purchaseOrderRepo.AuditTrails(row, ipAddress ?? string.Empty));
                     }
                     else
@@ -855,29 +857,23 @@ namespace Accounting_System.Controllers
                                 "IBS-RCD");
                         }
                     }
-                    if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                    if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && !hasPurchaseOrder)
                     {
-                        if (existing != null)
-                        {
-                            existing.IsPosted = true;
-                            existing.PostedBy = row.PostedBy;
-                            existing.PostedDate = row.PostedDate;
-                        }
+                        existing.IsPosted = true;
+                        existing.PostedBy = row.PostedBy;
+                        existing.PostedDate = row.PostedDate;
                     }
 
-                    if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default)
+                    if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && !hasPurchaseOrder)
                     {
-                        if (existing != null)
+                        if (existing.IsPosted)
                         {
-                            if (existing.IsPosted)
-                            {
-                                existing.IsPosted = false;
-                            }
-
-                            existing.IsVoided = true;
-                            existing.VoidedBy = row.VoidedBy;
-                            existing.VoidedDate = row.VoidedDate;
+                            existing.IsPosted = false;
                         }
+
+                        existing.IsVoided = true;
+                        existing.VoidedBy = row.VoidedBy;
+                        existing.VoidedDate = row.VoidedDate;
                     }
                 }
 

@@ -1897,7 +1897,8 @@ namespace Accounting_System.Controllers
                     foreach (var row in rows.OrderBy(x => x.Date).ThenBy(x => x.CreatedDate))
                     {
                         CheckVoucherHeader header;
-                        if (!lookup.ExistingCheckVoucherHeader.TryGetValue(row.OriginalSeriesNumber, out var existing))
+                        var hasCheckVoucher = lookup.ExistingCheckVoucherHeader.TryGetValue(row.OriginalSeriesNumber, out var existing);
+                        if (!hasCheckVoucher)
                         {
                             if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
                             {
@@ -1925,14 +1926,11 @@ namespace Accounting_System.Controllers
                             header = existing;
                         }
 
-                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && !hasCheckVoucher)
                         {
-                            if (existing != null)
-                            {
-                                existing.IsPosted = true;
-                                existing.PostedBy = row.PostedBy;
-                                existing.PostedDate = row.PostedDate;
-                            }
+                            header.IsPosted = true;
+                            header.PostedBy = row.PostedBy;
+                            header.PostedDate = row.PostedDate;
 
                             if (string.IsNullOrWhiteSpace(row.VoidedBy) || row.VoidedDate == default)
                             {
@@ -1940,19 +1938,16 @@ namespace Accounting_System.Controllers
                             }
                         }
 
-                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default)
+                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && !hasCheckVoucher)
                         {
-                            if (existing != null)
+                            if (header.IsPosted)
                             {
-                                if (existing.IsPosted)
-                                {
-                                    existing.IsPosted = false;
-                                }
-
-                                existing.IsVoided = true;
-                                existing.VoidedBy = row.VoidedBy;
-                                existing.VoidedDate = row.VoidedDate;
+                                header.IsPosted = false;
                             }
+
+                            header.IsVoided = true;
+                            header.VoidedBy = row.VoidedBy;
+                            header.VoidedDate = row.VoidedDate;
 
                             var findDisbursementBook = await _dbContext.DisbursementBooks.AnyAsync(db => db.CVNo == header.CheckVoucherHeaderNo, cancellationToken);
                             var findGeneralLedgerBook = await _dbContext.GeneralLedgerBooks.AnyAsync(gl => gl.Reference == header.CheckVoucherHeaderNo, cancellationToken);
@@ -1967,10 +1962,10 @@ namespace Accounting_System.Controllers
                                 await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == header.CheckVoucherHeaderNo, cancellationToken);
                             }
 
-                            if (existing != null && (findDisbursementBook || findGeneralLedgerBook))
+                            if (findDisbursementBook || findGeneralLedgerBook)
                             {
                                 var getCheckVoucherTradePayment = await _dbContext.CVTradePayments
-                                    .Where(cv => cv.CheckVoucherId == existing.CheckVoucherHeaderId)
+                                    .Where(cv => cv.CheckVoucherId == header.CheckVoucherHeaderId)
                                     .Include(cv => cv.CV)
                                     .ToListAsync(cancellationToken);
 

@@ -980,14 +980,16 @@ namespace Accounting_System.Controllers
 
                 foreach (var row in rows)
                 {
-                    if (!lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing))
+                    var hasSalesInvoice = lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing);
+                    if (!hasSalesInvoice)
                     {
                         if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
                         {
                             continue;
                         }
 
-                        salesInvoices.Add(_salesInvoiceRepo.MapToSalesInvoiceEntity(row, lookup));
+                        existing = _salesInvoiceRepo.MapToSalesInvoiceEntity(row, lookup);
+                        salesInvoices.Add(existing);
                         auditTrails.AddRange(_salesInvoiceRepo.AuditTrails(row, ipAddress ?? string.Empty));
                     }
                     else
@@ -1003,14 +1005,11 @@ namespace Accounting_System.Controllers
                                 "IBS-RCD");
                         }
                     }
-                    if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default)
+                    if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && !hasSalesInvoice)
                     {
-                        if (existing != null)
-                        {
-                            existing.IsPosted = true;
-                            existing.PostedBy = row.PostedBy;
-                            existing.PostedDate = row.PostedDate;
-                        }
+                        existing.IsPosted = true;
+                        existing.PostedBy = row.PostedBy;
+                        existing.PostedDate = row.PostedDate;
 
                         await _salesInvoiceRepo.SalesBookPosting(row, cancellationToken);
                         await _salesInvoiceRepo.GeneralLedgerBookPosting(row, cancellationToken);
@@ -1020,19 +1019,16 @@ namespace Accounting_System.Controllers
                     var existingInventory = await _dbContext.Inventories
                         .Include(i => i.Product)
                         .FirstOrDefaultAsync(i => i.Reference == row.SalesInvoiceNo, cancellationToken: cancellationToken);
-                    if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && existingInventory != null)
+                    if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && existingInventory != null && !hasSalesInvoice)
                     {
-                        if (existing != null)
+                        if (existing.IsPosted)
                         {
-                            if (existing.IsPosted)
-                            {
-                                existing.IsPosted = false;
-                            }
-
-                            existing.IsVoided = true;
-                            existing.VoidedBy = row.VoidedBy;
-                            existing.VoidedDate = row.VoidedDate;
+                            existing.IsPosted = false;
                         }
+
+                        existing.IsVoided = true;
+                        existing.VoidedBy = row.VoidedBy;
+                        existing.VoidedDate = row.VoidedDate;
 
                         await _generalRepo.RemoveRecords<SalesBook>(sb => sb.SerialNo == row.SalesInvoiceNo, cancellationToken);
                         await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == row.SalesInvoiceNo, cancellationToken);
