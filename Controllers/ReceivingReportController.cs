@@ -393,7 +393,9 @@ namespace Accounting_System.Controllers
             var model = await _receivingReportRepo.FindRR(id, cancellationToken);
 
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-            var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.PostedBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+            var userName = await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+            var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CreatedBy : userName;
+            var postedBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.PostedBy : userName;
             var date = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.PostedDate : DateTime.Now;
 
             try
@@ -407,7 +409,7 @@ namespace Accounting_System.Controllers
                 if (!model.IsPosted)
                 {
                     model.IsPosted = true;
-                    model.PostedBy = createdBy;
+                    model.PostedBy = postedBy;
                     model.PostedDate = date;
 
                     await _receivingReportRepo.PostAsync(model, User, cancellationToken);

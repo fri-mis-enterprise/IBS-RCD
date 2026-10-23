@@ -1112,7 +1112,9 @@ namespace Accounting_System.Controllers
             if (modelHeader != null)
             {
                 await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-                var createdBy = !modelHeader.OriginalSeriesNumber.IsNullOrEmpty() && modelHeader.OriginalDocumentId != 0 ? modelHeader.PostedBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+                var userName = await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+                var createdBy = !modelHeader.OriginalSeriesNumber.IsNullOrEmpty() && modelHeader.OriginalDocumentId != 0 ? modelHeader.CreatedBy : userName;
+                var postedBy = !modelHeader.OriginalSeriesNumber.IsNullOrEmpty() && modelHeader.OriginalDocumentId != 0 ? modelHeader.PostedBy : userName;
                 var date = !modelHeader.OriginalSeriesNumber.IsNullOrEmpty() && modelHeader.OriginalDocumentId != 0 ? modelHeader.PostedDate : DateTime.Now;
 
                 try
@@ -1158,7 +1160,7 @@ namespace Accounting_System.Controllers
 
                         if (modelHeader.OriginalSeriesNumber.IsNullOrEmpty() && modelHeader.OriginalDocumentId == 0)
                         {
-                            modelHeader.PostedBy = createdBy;
+                            modelHeader.PostedBy = postedBy;
                             modelHeader.PostedDate = date;
 
                             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
