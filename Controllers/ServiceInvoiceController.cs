@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Accounting_System.Data;
 using Accounting_System.Models;
 using Accounting_System.Models.AccountsReceivable;
@@ -839,20 +839,20 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[row, 11].Value = item.Instructions;
                     worksheet.Cells[row, 12].Value = item.IsPaid;
                     worksheet.Cells[row, 13].Value = item.CreatedBy;
-                    worksheet.Cells[row, 14].Value = item.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 14].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 15].Value = item.CancellationRemarks;
                     worksheet.Cells[row, 16].Value = item.CustomerId;
                     worksheet.Cells[row, 17].Value = item.ServiceInvoiceNo;
                     worksheet.Cells[row, 18].Value = item.ServicesId;
                     worksheet.Cells[row, 19].Value = item.ServiceInvoiceId;
                     worksheet.Cells[row, 20].Value = item.PostedBy;
-                    worksheet.Cells[row, 21].Value = item.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 21].Value = item.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 22].Value = item.EditedBy;
-                    worksheet.Cells[row, 23].Value = item.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 23].Value = item.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 24].Value = item.CanceledBy;
-                    worksheet.Cells[row, 25].Value = item.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 25].Value = item.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 26].Value = item.VoidedBy;
-                    worksheet.Cells[row, 27].Value = item.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 27].Value = item.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     row++;
                 }
@@ -878,124 +878,7 @@ namespace Accounting_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Import(IFormFile file, CancellationToken cancellationToken)
         {
-            if (file.Length == 0)
-            {
-                TempData["error"] = "The Excel file length is zero!.";
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-            }
-
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-
-            try
-            {
-                await using var stream = file.OpenReadStream();
-                using var package = new ExcelPackage(stream);
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault();
-                if (worksheet == null)
-                {
-                    TempData["error"] = "The Excel file contains no worksheets.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-                }
-                if (worksheet.ToString() != "ServiceInvoice")
-                {
-                    TempData["error"] = "The Excel file is not related to service invoice.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-                }
-
-                var rows = _serviceInvoiceRepo.ParseWorksheet(worksheet);
-                var lookup = await _serviceInvoiceRepo.BuildLookupServiceInvoiceContextAsync(rows, cancellationToken);
-
-                var serviceInvoices = new List<ServiceInvoice>();
-                var auditTrails = new List<AuditTrail>();
-                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                foreach (var row in rows)
-                {
-                    var hasServiceInvoice = lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing);
-                    if (!hasServiceInvoice)
-                    {
-                        if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                        {
-                            continue;
-                        }
-
-                        existing = _serviceInvoiceRepo.MapToServiceInvoiceEntity(row, lookup);
-                        serviceInvoices.Add(existing);
-                        auditTrails.AddRange(_serviceInvoiceRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                    }
-                    else
-                    {
-                        var changes = _serviceInvoiceRepo.Detect(existing, row, lookup.ExistingLogs);
-                        if (changes.Any())
-                        {
-                            await _serviceInvoiceRepo.LogChangesAsync(
-                                existing.OriginalDocumentId,
-                                changes,
-                                await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                existing.ServiceInvoiceNo,
-                                "IBS-RCD");
-                        }
-                    }
-                    if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && !hasServiceInvoice)
-                    {
-                        existing.IsPosted = true;
-                        existing.PostedBy = row.PostedBy;
-                        existing.PostedDate = row.PostedDate;
-
-                        await _serviceInvoiceRepo.SalesBookPosting(row, cancellationToken);
-                        await _serviceInvoiceRepo.GeneralLedgerBookPosting(row, cancellationToken);
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && !hasServiceInvoice)
-                    {
-                        if (existing.IsPosted)
-                        {
-                            existing.IsPosted = false;
-                        }
-
-                        existing.IsVoided = true;
-                        existing.VoidedBy = row.VoidedBy;
-                        existing.VoidedDate = row.VoidedDate;
-
-                        await _generalRepo.RemoveRecords<SalesBook>(sb => sb.SerialNo == row.ServiceInvoiceNo, cancellationToken);
-                        await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == row.ServiceInvoiceNo, cancellationToken);
-                    }
-                }
-
-                _dbContext.ServiceInvoices.AddRange(serviceInvoices);
-                _dbContext.AuditTrails.AddRange(auditTrails);
-                await _dbContext.SaveChangesAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
-
-                var checkChangesOfRecord = await _dbContext.ImportExportLogs
-                    .Where(iel => iel.Action == string.Empty).ToListAsync(cancellationToken);
-                if (checkChangesOfRecord.Any())
-                {
-                    TempData["importChanges"] = "";
-                }
-            }
-            catch (OperationCanceledException oce)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = oce.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-            }
-            catch (InvalidOperationException ioe)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["warning"] = ioe.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = ex.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-            }
-
-            TempData["success"] = "Uploading Success!";
-            return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
+            return await WorkbookImport.RunAsync(this, file, "ServiceInvoice", cancellationToken);
         }
 
         #endregion
@@ -1004,104 +887,8 @@ namespace Accounting_System.Controllers
         #region -- import xlsx record to AAS --
 
         [HttpPost]
-        public async Task<IActionResult> AasImport(IFormFile file, CancellationToken cancellationToken)
-        {
-            if (file.Length == 0)
-            {
-                TempData["error"] = "The Excel file length is zero!.";
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-            }
-
-            await using var transaction = await _aasDbContext.Database.BeginTransactionAsync(cancellationToken);
-
-            try
-            {
-                await using var stream = file.OpenReadStream();
-                using var package = new ExcelPackage(stream);
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault();
-                if (worksheet == null)
-                {
-                    TempData["error"] = "The Excel file contains no worksheets.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-                }
-
-                if (worksheet.ToString() != nameof(DynamicView.ServiceInvoice))
-                {
-                    TempData["error"] = "The Excel file is not related to service invoice.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-                }
-
-                var rows = _serviceInvoiceRepo.ParseWorksheet(worksheet);
-                var lookup = await _serviceInvoiceRepo.BuildLookupServiceInvoiceContextForAasAsync(rows, cancellationToken);
-
-                var serviceInvoices = new List<ServiceInvoice>();
-                var auditTrails = new List<AuditTrail>();
-                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                foreach (var row in rows)
-                {
-                    if (!lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                    {
-                        if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                        {
-                            continue;
-                        }
-
-                        serviceInvoices.Add(_serviceInvoiceRepo.MapToServiceInvoiceEntity(row, lookup));
-                        auditTrails.AddRange(_serviceInvoiceRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                    }
-                    else
-                    {
-                        var changes = _serviceInvoiceRepo.Detect(existing, row, lookup.ExistingLogs);
-                        if (changes.Any())
-                        {
-                            await _serviceInvoiceRepo.LogChangesAsync(
-                                existing.OriginalDocumentId,
-                                changes,
-                                await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                existing.ServiceInvoiceNo,
-                                "AAS");
-                        }
-                    }
-                }
-
-                _aasDbContext.ServiceInvoices.AddRange(serviceInvoices);
-                _aasDbContext.AuditTrails.AddRange(auditTrails);
-                await _aasDbContext.SaveChangesAsync(cancellationToken);
-                await _dbContext.SaveChangesAsync(cancellationToken);
-
-                var checkChangesOfRecord = await _dbContext.ImportExportLogs
-                    .Where(iel => iel.Action == string.Empty).ToListAsync(cancellationToken);
-                if (checkChangesOfRecord.Any())
-                {
-                    TempData["importChanges"] = "";
-                }
-
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch (OperationCanceledException oce)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = oce.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-            }
-            catch (InvalidOperationException ioe)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["warning"] = ioe.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = ex.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-            }
-
-            TempData["success"] = "Uploading Success!";
-            return RedirectToAction(nameof(Index), new { view = DynamicView.ServiceInvoice });
-        }
+        public Task<IActionResult> AasImport(IFormFile file, CancellationToken cancellationToken)
+            => WorkbookImport.RunAsync(this, file, "ServiceInvoice", cancellationToken, aas: true);
         #endregion
     }
 }

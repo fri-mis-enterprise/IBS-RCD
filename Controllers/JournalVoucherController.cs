@@ -1,4 +1,4 @@
-﻿using Accounting_System.Data;
+using Accounting_System.Data;
 using Accounting_System.Models;
 using Accounting_System.Models.AccountsPayable;
 using Accounting_System.Models.Reports;
@@ -1072,19 +1072,19 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[row, 4].Value = item.CRNo;
                     worksheet.Cells[row, 5].Value = item.JVReason;
                     worksheet.Cells[row, 6].Value = item.CreatedBy;
-                    worksheet.Cells[row, 7].Value = item.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 7].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 8].Value = item.CancellationRemarks;
                     worksheet.Cells[row, 9].Value = item.CVId;
                     worksheet.Cells[row, 10].Value = item.JournalVoucherHeaderNo;
                     worksheet.Cells[row, 11].Value = item.JournalVoucherHeaderId;
                     worksheet.Cells[row, 12].Value = item.PostedBy;
-                    worksheet.Cells[row, 13].Value = item.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 13].Value = item.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 14].Value = item.EditedBy;
-                    worksheet.Cells[row, 15].Value = item.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 15].Value = item.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 16].Value = item.CanceledBy;
-                    worksheet.Cells[row, 17].Value = item.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 17].Value = item.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 18].Value = item.VoidedBy;
-                    worksheet.Cells[row, 19].Value = item.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 19].Value = item.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     row++;
                 }
@@ -1131,13 +1131,13 @@ namespace Accounting_System.Controllers
                     worksheet3.Cells[cvhRow, 11].Value = item.CheckVoucherHeader.EndDate?.ToString("yyyy-MM-dd");
                     worksheet3.Cells[cvhRow, 12].Value = item.CheckVoucherHeader.NumberOfMonths;
                     worksheet3.Cells[cvhRow, 13].Value = item.CheckVoucherHeader.NumberOfMonthsCreated;
-                    worksheet3.Cells[cvhRow, 14].Value = item.CheckVoucherHeader.LastCreatedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[cvhRow, 14].Value = item.CheckVoucherHeader.LastCreatedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[cvhRow, 15].Value = item.CheckVoucherHeader.AmountPerMonth;
                     worksheet3.Cells[cvhRow, 16].Value = item.CheckVoucherHeader.IsComplete;
                     worksheet3.Cells[cvhRow, 17].Value = item.CheckVoucherHeader.AccruedType;
                     worksheet3.Cells[cvhRow, 18].Value = item.CheckVoucherHeader.Reference;
                     worksheet3.Cells[cvhRow, 19].Value = item.CheckVoucherHeader.CreatedBy;
-                    worksheet3.Cells[cvhRow, 20].Value = item.CheckVoucherHeader.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[cvhRow, 20].Value = item.CheckVoucherHeader.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[cvhRow, 21].Value = item.CheckVoucherHeader.Total;
                     if (item.CheckVoucherHeader.Amount != null)
                     {
@@ -1153,13 +1153,13 @@ namespace Accounting_System.Controllers
                     worksheet3.Cells[cvhRow, 30].Value = item.CheckVoucherHeader.SupplierId;
                     worksheet3.Cells[cvhRow, 31].Value = item.CheckVoucherHeader.CheckVoucherHeaderId;
                     worksheet3.Cells[cvhRow, 32].Value = item.CheckVoucherHeader.PostedBy;
-                    worksheet3.Cells[cvhRow, 33].Value = item.CheckVoucherHeader.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff") ?? null;
+                    worksheet3.Cells[cvhRow, 33].Value = item.CheckVoucherHeader.PostedDate?.ToString(CS.ImportDateTimeFormat) ?? null;
                     worksheet3.Cells[cvhRow, 34].Value = item.CheckVoucherHeader.EditedBy;
-                    worksheet3.Cells[cvhRow, 35].Value = item.CheckVoucherHeader.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[cvhRow, 35].Value = item.CheckVoucherHeader.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[cvhRow, 36].Value = item.CheckVoucherHeader.CanceledBy;
-                    worksheet3.Cells[cvhRow, 37].Value = item.CheckVoucherHeader.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[cvhRow, 37].Value = item.CheckVoucherHeader.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[cvhRow, 38].Value = item.CheckVoucherHeader.VoidedBy;
-                    worksheet3.Cells[cvhRow, 39].Value = item.CheckVoucherHeader.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[cvhRow, 39].Value = item.CheckVoucherHeader.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     cvhRow++;
                 }
@@ -1222,13 +1222,13 @@ namespace Accounting_System.Controllers
                     worksheet3.Cells[cvhRow, 11].Value = item.EndDate?.ToString("yyyy-MM-dd");
                     worksheet3.Cells[cvhRow, 12].Value = item.NumberOfMonths;
                     worksheet3.Cells[cvhRow, 13].Value = item.NumberOfMonthsCreated;
-                    worksheet3.Cells[cvhRow, 14].Value = item.LastCreatedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[cvhRow, 14].Value = item.LastCreatedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[cvhRow, 15].Value = item.AmountPerMonth;
                     worksheet3.Cells[cvhRow, 16].Value = item.IsComplete;
                     worksheet3.Cells[cvhRow, 17].Value = item.AccruedType;
                     worksheet3.Cells[cvhRow, 18].Value = item.Reference;
                     worksheet3.Cells[cvhRow, 19].Value = item.CreatedBy;
-                    worksheet3.Cells[cvhRow, 20].Value = item.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[cvhRow, 20].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[cvhRow, 21].Value = item.Total;
                     if (item.Amount != null)
                     {
@@ -1244,13 +1244,13 @@ namespace Accounting_System.Controllers
                     worksheet3.Cells[cvhRow, 30].Value = item.SupplierId;
                     worksheet3.Cells[cvhRow, 31].Value = item.CheckVoucherHeaderId;
                     worksheet3.Cells[cvhRow, 32].Value = item.PostedBy;
-                    worksheet3.Cells[cvhRow, 33].Value = item.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff") ?? null;
+                    worksheet3.Cells[cvhRow, 33].Value = item.PostedDate?.ToString(CS.ImportDateTimeFormat) ?? null;
                     worksheet3.Cells[cvhRow, 34].Value = item.EditedBy;
-                    worksheet3.Cells[cvhRow, 35].Value = item.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[cvhRow, 35].Value = item.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[cvhRow, 36].Value = item.CanceledBy;
-                    worksheet3.Cells[cvhRow, 37].Value = item.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[cvhRow, 37].Value = item.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[cvhRow, 38].Value = item.VoidedBy;
-                    worksheet3.Cells[cvhRow, 39].Value = item.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[cvhRow, 39].Value = item.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     cvhRow++;
                 }
@@ -1395,23 +1395,23 @@ namespace Accounting_System.Controllers
                     worksheet6.Cells[rrRow, 11].Value = item.Remarks;
                     worksheet6.Cells[rrRow, 12].Value = item.AmountPaid;
                     worksheet6.Cells[rrRow, 13].Value = item.IsPaid;
-                    worksheet6.Cells[rrRow, 14].Value = item.PaidDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet6.Cells[rrRow, 14].Value = item.PaidDate.ToString(CS.ImportDateTimeFormat);
                     worksheet6.Cells[rrRow, 15].Value = item.CanceledQuantity;
                     worksheet6.Cells[rrRow, 16].Value = item.CreatedBy;
-                    worksheet6.Cells[rrRow, 17].Value = item.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet6.Cells[rrRow, 17].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet6.Cells[rrRow, 18].Value = item.CancellationRemarks;
                     worksheet6.Cells[rrRow, 19].Value = item.ReceivedDate?.ToString("yyyy-MM-dd");
                     worksheet6.Cells[rrRow, 20].Value = item.POId;
                     worksheet6.Cells[rrRow, 21].Value = item.ReceivingReportNo;
                     worksheet6.Cells[rrRow, 22].Value = item.ReceivingReportId;
                     worksheet6.Cells[rrRow, 23].Value = item.PostedBy;
-                    worksheet6.Cells[rrRow, 24].Value = item.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet6.Cells[rrRow, 24].Value = item.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet6.Cells[rrRow, 25].Value = item.EditedBy;
-                    worksheet6.Cells[rrRow, 26].Value = item.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet6.Cells[rrRow, 26].Value = item.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet6.Cells[rrRow, 27].Value = item.CanceledBy;
-                    worksheet6.Cells[rrRow, 28].Value = item.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet6.Cells[rrRow, 28].Value = item.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet6.Cells[rrRow, 29].Value = item.VoidedBy;
-                    worksheet6.Cells[rrRow, 30].Value = item.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet6.Cells[rrRow, 30].Value = item.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     rrRow++;
                 }
@@ -1440,7 +1440,7 @@ namespace Accounting_System.Controllers
                     worksheet5.Cells[poRow, 9].Value = item.ReceivedDate != default ? item.ReceivedDate.ToString("yyyy-MM-dd HH:mm:ss.ffffff zzz") : null;
                     worksheet5.Cells[poRow, 10].Value = item.Remarks;
                     worksheet5.Cells[poRow, 11].Value = item.CreatedBy;
-                    worksheet5.Cells[poRow, 12].Value = item.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet5.Cells[poRow, 12].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet5.Cells[poRow, 13].Value = item.IsClosed;
                     worksheet5.Cells[poRow, 14].Value = item.CancellationRemarks;
                     worksheet5.Cells[poRow, 15].Value = item.ProductId;
@@ -1448,13 +1448,13 @@ namespace Accounting_System.Controllers
                     worksheet5.Cells[poRow, 17].Value = item.SupplierId;
                     worksheet5.Cells[poRow, 18].Value = item.PurchaseOrderId;
                     worksheet5.Cells[poRow, 19].Value = item.PostedBy;
-                    worksheet5.Cells[poRow, 20].Value = item.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet5.Cells[poRow, 20].Value = item.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet5.Cells[poRow, 21].Value = item.EditedBy;
-                    worksheet5.Cells[poRow, 22].Value = item.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet5.Cells[poRow, 22].Value = item.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet5.Cells[poRow, 23].Value = item.CanceledBy;
-                    worksheet5.Cells[poRow, 24].Value = item.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet5.Cells[poRow, 24].Value = item.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet5.Cells[poRow, 25].Value = item.VoidedBy;
-                    worksheet5.Cells[poRow, 26].Value = item.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet5.Cells[poRow, 26].Value = item.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     poRow++;
                 }
@@ -1462,6 +1462,7 @@ namespace Accounting_System.Controllers
                 #endregion -- Purchase Order Export --
 
                 // Convert the Excel package to a byte array
+                await VoucherExportDependencies.IncludeAsync(_dbContext, package, cancellationToken);
                 var excelBytes = await package.GetAsByteArrayAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"JournalVoucherList_IBS-RCD_{DateTime.Now:yyyyddMMHHmmss}.xlsx");
@@ -1482,430 +1483,7 @@ namespace Accounting_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Import(IFormFile file, CancellationToken cancellationToken)
         {
-            if (file.Length == 0)
-            {
-                return RedirectToAction(nameof(Index));
-            }
-
-            using (var stream = new MemoryStream())
-            {
-                await file.CopyToAsync(stream, cancellationToken);
-                stream.Position = 0;
-                await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-                var createdBy = await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
-                try
-                {
-                    using var package = new ExcelPackage(stream);
-                    var worksheet = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "JournalVoucherHeader");
-
-                    var worksheet2 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "JournalVoucherDetails");
-
-                    var worksheet3 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "PurchaseOrder");
-
-                    var worksheet4 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "ReceivingReport");
-
-                    var worksheet5 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "CheckVoucherHeader");
-
-                    var worksheet6 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "CheckVoucherDetails");
-
-                    var worksheet7 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "MultipleCheckVoucherPayments");
-
-                    if (worksheet == null)
-                    {
-                        TempData["error"] = "The Excel file contains no worksheets of journal voucher header.";
-                        return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-                    }
-                    if (worksheet2 == null)
-                    {
-                        TempData["error"] = "The Excel file contains no worksheets of journal voucher details.";
-                        return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-                    }
-                    if (worksheet.ToString() != "JournalVoucherHeader")
-                    {
-                        TempData["error"] = "The Excel file is not related to journal voucher.";
-                        return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-                    }
-
-                    #region Purchase Order Import
-
-                    if (worksheet3 != null)
-                    {
-                        var rows = _purchaseOrderRepo.ParseWorksheet(worksheet3);
-                        var lookup = await _purchaseOrderRepo.BuildLookupPurchaseOrderContextAsync(rows, cancellationToken);
-
-                        var purchaseOrders = new List<PurchaseOrder>();
-                        var auditTrails = new List<AuditTrail>();
-                        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                        var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                        foreach (var row in rows)
-                        {
-                            if (!lookup.ExistingPurchaseOrder.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                            {
-                                if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                                {
-                                    continue;
-                                }
-
-                                purchaseOrders.Add(_purchaseOrderRepo.MapToPurchaseOrderEntity(row, lookup));
-                                auditTrails.AddRange(_purchaseOrderRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                            }
-                            else
-                            {
-                                var changes = _purchaseOrderRepo.Detect(existing, row, lookup.ExistingLogs);
-                                if (changes.Any())
-                                {
-                                    await _purchaseOrderRepo.LogChangesAsync(
-                                        existing.OriginalDocumentId,
-                                        changes,
-                                        await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                        existing.PurchaseOrderNo,
-                                        "IBS-RCD");
-                                }
-                            }
-                        }
-
-                        _dbContext.PurchaseOrders.AddRange(purchaseOrders);
-                        _dbContext.AuditTrails.AddRange(auditTrails);
-                        await _dbContext.SaveChangesAsync(cancellationToken);
-                    }
-
-                    #endregion
-
-                    #region Receiving Report Import
-
-                    if (worksheet4 != null)
-                    {
-                        var rows = _receivingReportRepo.ParseWorksheet(worksheet4);
-                        var lookup = await _receivingReportRepo.BuildLookupReceivingReportContextAsync(rows, cancellationToken);
-
-                        var receivingReports = new List<ReceivingReport>();
-                        var auditTrails = new List<AuditTrail>();
-                        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                        var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                        foreach (var row in rows)
-                        {
-                            if (!lookup.ExistingReceivingReport.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                            {
-                                if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                                {
-                                    continue;
-                                }
-
-                                receivingReports.Add(_receivingReportRepo.MapToReceivingReportEntity(row, lookup));
-                                auditTrails.AddRange(_receivingReportRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                            }
-                            else
-                            {
-                                var changes = _receivingReportRepo.Detect(existing, row, lookup.ExistingLogs);
-                                if (changes.Any())
-                                {
-                                    await _receivingReportRepo.LogChangesAsync(
-                                        existing.OriginalDocumentId,
-                                        changes,
-                                        await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                        existing.ReceivingReportNo,
-                                        "IBS-RCD");
-                                }
-                            }
-                        }
-
-                        _dbContext.ReceivingReports.AddRange(receivingReports);
-                        _dbContext.AuditTrails.AddRange(auditTrails);
-                        await _dbContext.SaveChangesAsync(cancellationToken);
-                    }
-
-                    #endregion
-
-                    #region Check Voucher Header Import
-
-                    if (worksheet5 != null!)
-                    {
-                        var rows = await _checkVoucherRepo.ParseWorksheet(worksheet5, cancellationToken);
-                        var lookup = await _checkVoucherRepo.BuildLookupCheckVoucherHeaderContextAsync(rows, cancellationToken);
-
-                        var checkVoucherHeaders = new List<CheckVoucherHeader>();
-                        var auditTrails = new List<AuditTrail>();
-                        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                        var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                        var getLastCheckVoucherHeaderNo = await _dbContext.CheckVoucherHeaders
-                            .OrderByDescending(x => x.CheckVoucherHeaderNo)
-                            .Select(x => x.CheckVoucherHeaderNo)
-                            .FirstOrDefaultAsync(cancellationToken);
-
-                        foreach (var row in rows.OrderBy(x => x.Date).ThenBy(x => x.CreatedDate))
-                        {
-                            if (!lookup.ExistingCheckVoucherHeader.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                            {
-                                if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                                {
-                                    continue;
-                                }
-
-                                getLastCheckVoucherHeaderNo = _checkVoucherRepo.GenerateCodeForUploadingExcelFile(getLastCheckVoucherHeaderNo, cancellationToken);
-                                checkVoucherHeaders.Add(_checkVoucherRepo.MapToCheckVoucherHeaderEntity(row, checkVoucherHeaders, lookup, getLastCheckVoucherHeaderNo));
-                                auditTrails.AddRange(_checkVoucherRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                            }
-                            else
-                            {
-                                var changes = _checkVoucherRepo.Detect(existing, row, lookup.ExistingLogs);
-                                if (changes.Any())
-                                {
-                                    await _checkVoucherRepo.LogChangesAsync(
-                                        existing.OriginalDocumentId,
-                                        changes,
-                                        await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                        existing.CheckVoucherHeaderNo!,
-                                        "IBS-RCD");
-                                }
-                            }
-                        }
-
-                        _dbContext.CheckVoucherHeaders.AddRange(checkVoucherHeaders);
-                        _dbContext.AuditTrails.AddRange(auditTrails);
-                        await _dbContext.SaveChangesAsync(cancellationToken);
-                    }
-
-                    #endregion
-
-                    #region -- Check Voucher Multiple Payment Import --
-
-                    try
-                    {
-                        if (worksheet7 != null)
-                        {
-                            var rows = _checkVoucherRepo.ParseWorksheetCvMultiplePayment(worksheet7);
-                            var lookup = await _checkVoucherRepo.BuildLookupCvMultiplePaymentContextAsync(rows, cancellationToken);
-
-                            var multipleCheckVoucherPayments = new List<MultipleCheckVoucherPayment>();
-
-                            foreach (var row in rows)
-                            {
-                                multipleCheckVoucherPayments.Add(_checkVoucherRepo.MapToCvMultiplePaymentEntity(row, lookup));
-                            }
-
-                            _dbContext.MultipleCheckVoucherPayments.AddRange(multipleCheckVoucherPayments);
-                            await _dbContext.SaveChangesAsync(cancellationToken);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        TempData["error"] = ex.Message;
-                    }
-
-                    #endregion -- Check Voucher Multiple Payment Import --
-
-                    #region -- Check Voucher Details Import --
-
-                    if (worksheet6 != null)
-                    {
-                        var rows = _checkVoucherRepo.ParseWorksheetCheckVoucherDetails(worksheet6);
-                        var lookup = await _checkVoucherRepo.BuildLookupCheckVoucherDetailsContextAsync(rows, cancellationToken);
-
-                        var checkVoucherDetails = new List<CheckVoucherDetail>();
-                        var originalDocumentId = new HashSet<int>();
-
-                        foreach (var row in rows)
-                        {
-                            if (!lookup.ExistingCheckVoucherDetail.TryGetValue(row.OriginalDocumentId, out var existing))
-                            {
-                                if (!originalDocumentId.Add(row.OriginalDocumentId))
-                                {
-                                    continue;
-                                }
-
-                                checkVoucherDetails.Add(_checkVoucherRepo.MapToCheckVoucherDetailsEntity(row, lookup));
-                            }
-                            else
-                            {
-                                var changes = _checkVoucherRepo.DetectCvDetails(existing, row, lookup.ExistingLogs);
-                                if (changes.Any())
-                                {
-                                    await _checkVoucherRepo.LogChangesForCVDAsync(
-                                        existing.OriginalDocumentId ?? 0,
-                                        changes,
-                                        await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                        existing.CheckVoucherHeader!.CheckVoucherHeaderNo,
-                                        "IBS-RCD");
-                                }
-                            }
-                        }
-
-                        _dbContext.CheckVoucherDetails.AddRange(checkVoucherDetails);
-                        await _dbContext.SaveChangesAsync(cancellationToken);
-                    }
-
-                    #endregion -- Check Voucher Details Import --
-
-                    var postedJournalVouchers = new List<JournalVoucherHeader>();
-
-                    #region -- Journal Voucher Header Import --
-
-                    if (worksheet != null)
-                    {
-                        var rows = _journalVoucherRepo.ParseWorksheet(worksheet);
-                        var lookup = await _journalVoucherRepo.BuildLookupCheckVoucherHeaderContextAsync(rows, cancellationToken);
-
-                        var journalVoucherHeader = new List<JournalVoucherHeader>();
-                        var auditTrails = new List<AuditTrail>();
-                        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                        var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                        foreach (var row in rows)
-                        {
-                            JournalVoucherHeader header;
-                            var hasJournalVoucher = lookup.ExistingJournalVoucherHeader.TryGetValue(row.OriginalSeriesNumber, out var existing);
-                            if (!hasJournalVoucher)
-                            {
-                                if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                                {
-                                    continue;
-                                }
-
-                                header = _journalVoucherRepo.MapToJournalVoucherEntity(row, lookup);
-                                journalVoucherHeader.Add(header);
-                                auditTrails.AddRange(_journalVoucherRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                            }
-                            else
-                            {
-                                var changes = _journalVoucherRepo.Detect(existing, row, lookup.ExistingLogs);
-                                if (changes.Any())
-                                {
-                                    await _journalVoucherRepo.LogChangesAsync(
-                                        existing.OriginalDocumentId,
-                                        changes,
-                                        await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                        existing.JournalVoucherHeaderNo!,
-                                        "IBS-RCD");
-                                }
-
-                                header = existing;
-                            }
-
-                            if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && !hasJournalVoucher)
-                            {
-                                header.IsPosted = true;
-                                header.PostedBy = row.PostedBy;
-                                header.PostedDate = row.PostedDate;
-
-                                if (string.IsNullOrWhiteSpace(row.VoidedBy) || row.VoidedDate == default)
-                                {
-                                    postedJournalVouchers.Add(header);
-                                }
-                            }
-
-                            if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && !hasJournalVoucher)
-                            {
-                                if (header.IsPosted)
-                                {
-                                    header.IsPosted = false;
-                                }
-
-                                header.IsVoided = true;
-                                header.VoidedBy = row.VoidedBy;
-                                header.VoidedDate = row.VoidedDate;
-
-                                var findJournalVoucherInJournalBook = await _dbContext.JournalBooks.Where(jb => jb.Reference == header.JournalVoucherHeaderNo).ToListAsync(cancellationToken);
-                                var findJournalVoucherInGeneralLedger = await _dbContext.GeneralLedgerBooks.Where(jb => jb.Reference == header.JournalVoucherHeaderNo).ToListAsync(cancellationToken);
-
-                                if (findJournalVoucherInJournalBook.Any())
-                                {
-                                    await _generalRepo.RemoveRecords<JournalBook>(crb => crb.Reference == header.JournalVoucherHeaderNo, cancellationToken);
-                                }
-                                if (findJournalVoucherInGeneralLedger.Any())
-                                {
-                                    await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == header.JournalVoucherHeaderNo, cancellationToken);
-                                }
-                            }
-                        }
-
-                        _dbContext.JournalVoucherHeaders.AddRange(journalVoucherHeader);
-                        _dbContext.AuditTrails.AddRange(auditTrails);
-                        await _dbContext.SaveChangesAsync(cancellationToken);
-                    }
-
-                    #endregion -- Journal Voucher Header Import --
-
-                    #region -- Journal Voucher Details Import --
-
-                    if (worksheet2 != null)
-                    {
-                        var rows = _journalVoucherRepo.ParseWorksheetJournalVoucherDetails(worksheet2);
-                        var lookup = await _journalVoucherRepo.BuildLookupJournalVoucherDetailsContextAsync(rows, cancellationToken);
-
-                        var journalVoucherDetails = new List<JournalVoucherDetail>();
-                        var originalDocumentId = new HashSet<int>();
-
-                        foreach (var row in rows)
-                        {
-                            if (!lookup.ExistingJournalVoucherDetail.TryGetValue(row.OriginalDocumentId, out var existing))
-                            {
-                                if (!originalDocumentId.Add(row.OriginalDocumentId))
-                                {
-                                    continue;
-                                }
-
-                                journalVoucherDetails.Add(_journalVoucherRepo.MapToJournalVoucherDetailsEntity(row, lookup));
-                            }
-                            else
-                            {
-                                var changes = _journalVoucherRepo.DetectJvDetails(existing, row, lookup.ExistingLogs);
-                                if (changes.Any())
-                                {
-                                    await _journalVoucherRepo.LogChangesForJVDAsync(
-                                        existing.OriginalDocumentId ?? 0,
-                                        changes,
-                                        await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                        existing.JournalVoucherHeader!.JournalVoucherHeaderNo,
-                                        "IBS-RCD");
-                                }
-                            }
-                        }
-
-                        _dbContext.JournalVoucherDetails.AddRange(journalVoucherDetails);
-                        await _dbContext.SaveChangesAsync(cancellationToken);
-                    }
-
-                    #endregion -- Journal Voucher Details Import --
-
-                    foreach (var header in postedJournalVouchers)
-                    {
-                        await _journalVoucherRepo.GeneralLedgerBookPosting(header, cancellationToken);
-                        await _journalVoucherRepo.JournalBookPosting(header, cancellationToken);
-                    }
-
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                    await transaction.CommitAsync(cancellationToken);
-
-                    var checkChangesOfRecord = await _dbContext.ImportExportLogs
-                        .Where(iel => iel.Action == string.Empty).ToListAsync(cancellationToken);
-                    if (checkChangesOfRecord.Any())
-                    {
-                        TempData["importChanges"] = "";
-                    }
-                }
-                catch (OperationCanceledException oce)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    TempData["error"] = oce.Message;
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-                }
-                catch (InvalidOperationException ioe)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    TempData["warning"] = ioe.Message;
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    TempData["error"] = ex.Message;
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-                }
-            }
-            TempData["success"] = "Uploading Success!";
-            return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
+            return await WorkbookImport.RunAsync(this, file, "JournalVoucherHeader", cancellationToken);
         }
 
         #endregion
@@ -1914,378 +1492,8 @@ namespace Accounting_System.Controllers
         #region -- import xlsx record to AAS --
 
         [HttpPost]
-        public async Task<IActionResult> AasImport(IFormFile file, CancellationToken cancellationToken)
-        {
-            if (file.Length == 0)
-            {
-                TempData["error"] = "The Excel file length is zero!.";
-                return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-            }
-
-            await using var transaction = await _aasDbContext.Database.BeginTransactionAsync(cancellationToken);
-            var createdBy = await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
-
-            try
-            {
-                await using var stream = file.OpenReadStream();
-                using var package = new ExcelPackage(stream);
-
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "JournalVoucherHeader");
-                var worksheet2 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "JournalVoucherDetails");
-                var worksheet3 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "PurchaseOrder");
-                var worksheet4 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "ReceivingReport");
-                var worksheet5 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "CheckVoucherHeader");
-                var worksheet6 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "CheckVoucherDetails");
-                var worksheet7 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "MultipleCheckVoucherPayments");
-
-                if (worksheet == null)
-                {
-                    TempData["error"] = "The Excel file contains no worksheets of journal voucher header.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-                }
-
-                if (worksheet2 == null)
-                {
-                    TempData["error"] = "The Excel file contains no worksheets of journal voucher details.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-                }
-
-                if (worksheet.ToString() != "JournalVoucherHeader")
-                {
-                    TempData["error"] = "The Excel file is not related to journal voucher.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-                }
-
-                #region Purchase Order Import
-
-                if (worksheet3 != null)
-                {
-                    var rows = _purchaseOrderRepo.ParseWorksheet(worksheet3);
-                    var lookup = await _purchaseOrderRepo.BuildLookupPurchaseOrderContextForAasAsync(rows, cancellationToken);
-
-                    var purchaseOrders = new List<PurchaseOrder>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingPurchaseOrder.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            purchaseOrders.Add(_purchaseOrderRepo.MapToPurchaseOrderEntity(row, lookup));
-                            auditTrails.AddRange(_purchaseOrderRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _purchaseOrderRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _purchaseOrderRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    createdBy,
-                                    existing.PurchaseOrderNo,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.PurchaseOrders.AddRange(purchaseOrders);
-                    _aasDbContext.AuditTrails.AddRange(auditTrails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion
-
-                #region Receiving Report Import
-
-                if (worksheet4 != null)
-                {
-                    var rows = _receivingReportRepo.ParseWorksheet(worksheet4);
-                    var lookup = await _receivingReportRepo.BuildLookupReceivingReportContextForAasAsync(rows, cancellationToken);
-
-                    var receivingReports = new List<ReceivingReport>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingReceivingReport.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            receivingReports.Add(_receivingReportRepo.MapToReceivingReportEntity(row, lookup));
-                            auditTrails.AddRange(_receivingReportRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _receivingReportRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _receivingReportRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    createdBy,
-                                    existing.ReceivingReportNo,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.ReceivingReports.AddRange(receivingReports);
-                    _aasDbContext.AuditTrails.AddRange(auditTrails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion
-
-                #region Check Voucher Header Import
-
-                if (worksheet5 != null)
-                {
-                    var rows = await _checkVoucherRepo.ParseWorksheet(worksheet5, cancellationToken);
-                    var lookup = await _checkVoucherRepo.BuildLookupCheckVoucherHeaderContextForAasAsync(rows, cancellationToken);
-
-                    var checkVoucherHeaders = new List<CheckVoucherHeader>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    var getLastCheckVoucherHeaderNo = await _aasDbContext.CheckVoucherHeaders
-                        .OrderByDescending(x => x.CheckVoucherHeaderNo)
-                        .Select(x => x.CheckVoucherHeaderNo)
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    foreach (var row in rows.OrderBy(x => x.Date).ThenBy(x => x.CreatedDate))
-                    {
-                        if (!lookup.ExistingCheckVoucherHeader.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            getLastCheckVoucherHeaderNo = _checkVoucherRepo.GenerateCodeForUploadingExcelFile(getLastCheckVoucherHeaderNo, cancellationToken);
-                            checkVoucherHeaders.Add(_checkVoucherRepo.MapToCheckVoucherHeaderEntity(row, checkVoucherHeaders, lookup, getLastCheckVoucherHeaderNo));
-                            auditTrails.AddRange(_checkVoucherRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _checkVoucherRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _checkVoucherRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    createdBy,
-                                    existing.CheckVoucherHeaderNo!,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.CheckVoucherHeaders.AddRange(checkVoucherHeaders);
-                    _aasDbContext.AuditTrails.AddRange(auditTrails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion
-
-                #region -- Check Voucher Multiple Payment Import --
-
-                if (worksheet7 != null)
-                {
-                    var rows = _checkVoucherRepo.ParseWorksheetCvMultiplePayment(worksheet7);
-                    var lookup = await _checkVoucherRepo.BuildLookupCvMultiplePaymentContextForAasAsync(rows, cancellationToken);
-
-                    var multipleCheckVoucherPayments = new List<MultipleCheckVoucherPayment>();
-
-                    foreach (var row in rows)
-                    {
-                        multipleCheckVoucherPayments.Add(_checkVoucherRepo.MapToCvMultiplePaymentEntity(row, lookup));
-                    }
-
-                    _aasDbContext.MultipleCheckVoucherPayments.AddRange(multipleCheckVoucherPayments);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion -- Check Voucher Multiple Payment Import --
-
-                #region -- Check Voucher Details Import --
-
-                if (worksheet6 != null)
-                {
-                    var rows = _checkVoucherRepo.ParseWorksheetCheckVoucherDetails(worksheet6);
-                    var lookup = await _checkVoucherRepo.BuildLookupCheckVoucherDetailsContextForAasAsync(rows, cancellationToken);
-
-                    var checkVoucherDetails = new List<CheckVoucherDetail>();
-                    var originalDocumentId = new HashSet<int>();
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingCheckVoucherDetail.TryGetValue(row.OriginalDocumentId, out var existing))
-                        {
-                            if (!originalDocumentId.Add(row.OriginalDocumentId))
-                            {
-                                continue;
-                            }
-
-                            checkVoucherDetails.Add(_checkVoucherRepo.MapToCheckVoucherDetailsEntity(row, lookup));
-                        }
-                        else
-                        {
-                            var changes = _checkVoucherRepo.DetectCvDetails(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _checkVoucherRepo.LogChangesForCVDAsync(
-                                    existing.OriginalDocumentId ?? 0,
-                                    changes,
-                                    createdBy,
-                                    existing.CheckVoucherHeader!.CheckVoucherHeaderNo,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.CheckVoucherDetails.AddRange(checkVoucherDetails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion -- Check Voucher Details Import --
-
-                #region -- Journal Voucher Header Import --
-
-                if (worksheet != null!)
-                {
-                    var rows = _journalVoucherRepo.ParseWorksheet(worksheet);
-                    var lookup = await _journalVoucherRepo.BuildLookupJournalVoucherHeaderContextForAasAsync(rows, cancellationToken);
-
-                    var journalVoucherHeaders = new List<JournalVoucherHeader>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingJournalVoucherHeader.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            journalVoucherHeaders.Add(_journalVoucherRepo.MapToJournalVoucherEntity(row, lookup));
-                            auditTrails.AddRange(_journalVoucherRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _journalVoucherRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _journalVoucherRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    createdBy,
-                                    existing.JournalVoucherHeaderNo!,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.JournalVoucherHeaders.AddRange(journalVoucherHeaders);
-                    _aasDbContext.AuditTrails.AddRange(auditTrails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion -- Journal Voucher Header Import --
-
-                #region -- Journal Voucher Details Import --
-
-                if (worksheet2 != null)
-                {
-                    var rows = _journalVoucherRepo.ParseWorksheetJournalVoucherDetails(worksheet2);
-                    var lookup = await _journalVoucherRepo.BuildLookupJournalVoucherDetailsContextForAasAsync(rows, cancellationToken);
-
-                    var journalVoucherDetails = new List<JournalVoucherDetail>();
-                    var originalDocumentId = new HashSet<int>();
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingJournalVoucherDetail.TryGetValue(row.OriginalDocumentId, out var existing))
-                        {
-                            if (!originalDocumentId.Add(row.OriginalDocumentId))
-                            {
-                                continue;
-                            }
-
-                            journalVoucherDetails.Add(_journalVoucherRepo.MapToJournalVoucherDetailsEntity(row, lookup));
-                        }
-                        else
-                        {
-                            var changes = _journalVoucherRepo.DetectJvDetails(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _journalVoucherRepo.LogChangesForJVDAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    createdBy,
-                                    existing.TransactionNo!,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.JournalVoucherDetails.AddRange(journalVoucherDetails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion -- Journal Voucher Details Import --
-
-                var checkChangesOfRecord = await _dbContext.ImportExportLogs
-                    .Where(iel => iel.Action == string.Empty).ToListAsync(cancellationToken);
-                if (checkChangesOfRecord.Any())
-                {
-                    TempData["importChanges"] = "";
-                }
-
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch (OperationCanceledException oce)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = oce.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-            }
-            catch (InvalidOperationException ioe)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["warning"] = ioe.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = ex.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-            }
-
-            TempData["success"] = "Uploading Success!";
-            return RedirectToAction(nameof(Index), new { view = DynamicView.JournalVoucher });
-        }
+        public Task<IActionResult> AasImport(IFormFile file, CancellationToken cancellationToken)
+            => WorkbookImport.RunAsync(this, file, "JournalVoucherHeader", cancellationToken, aas: true);
 
 
         #endregion

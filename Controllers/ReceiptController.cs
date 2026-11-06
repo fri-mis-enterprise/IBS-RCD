@@ -36,7 +36,9 @@ namespace Accounting_System.Controllers
 
         private readonly GeneralRepo _generalRepo;
 
-        public ReceiptController(ApplicationDbContext dbContext, UserManager<IdentityUser> userManager, ReceiptRepo receiptRepo, IWebHostEnvironment webHostEnvironment, GeneralRepo generalRepo, SalesInvoiceRepo salesInvoiceRepo, ServiceInvoiceRepo serviceInvoiceRepo, AasDbContext aasDbContext)
+        private readonly InventoryRepo _inventoryRepo;
+
+        public ReceiptController(ApplicationDbContext dbContext, UserManager<IdentityUser> userManager, ReceiptRepo receiptRepo, IWebHostEnvironment webHostEnvironment, GeneralRepo generalRepo, SalesInvoiceRepo salesInvoiceRepo, ServiceInvoiceRepo serviceInvoiceRepo, AasDbContext aasDbContext, InventoryRepo inventoryRepo)
         {
             _dbContext = dbContext;
             this._userManager = userManager;
@@ -46,6 +48,7 @@ namespace Accounting_System.Controllers
             _salesInvoiceRepo = salesInvoiceRepo;
             _serviceInvoiceRepo = serviceInvoiceRepo;
             _aasDbContext = aasDbContext;
+            _inventoryRepo = inventoryRepo;
         }
 
         public IActionResult CollectionIndex(string? view)
@@ -2104,7 +2107,7 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[row, 19].Value = item.F2306FilePath;
                     worksheet.Cells[row, 20].Value = item.F2307FilePath;
                     worksheet.Cells[row, 21].Value = item.CreatedBy;
-                    worksheet.Cells[row, 22].Value = item.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 22].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 23].Value = item.CancellationRemarks;
                     if (item.MultipleSIId != null)
                     {
@@ -2119,13 +2122,13 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[row, 31].Value = item.ServiceInvoiceId;
                     worksheet.Cells[row, 32].Value = item.CollectionReceiptId;
                     worksheet.Cells[row, 33].Value = item.PostedBy;
-                    worksheet.Cells[row, 34].Value = item.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 34].Value = item.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 35].Value = item.EditedBy;
-                    worksheet.Cells[row, 36].Value = item.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 36].Value = item.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 37].Value = item.CanceledBy;
-                    worksheet.Cells[row, 38].Value = item.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 38].Value = item.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 39].Value = item.VoidedBy;
-                    worksheet.Cells[row, 40].Value = item.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 40].Value = item.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     row++;
                 }
@@ -2156,20 +2159,20 @@ namespace Accounting_System.Controllers
                     worksheet3.Cells[siRow, 12].Value = item.SalesInvoice.IsTaxAndVatPaid;
                     worksheet3.Cells[siRow, 13].Value = item.SalesInvoice.DueDate.ToString("yyyy-MM-dd");
                     worksheet3.Cells[siRow, 14].Value = item.SalesInvoice.CreatedBy;
-                    worksheet3.Cells[siRow, 15].Value = item.SalesInvoice.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[siRow, 15].Value = item.SalesInvoice.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[siRow, 16].Value = item.SalesInvoice.CancellationRemarks;
                     worksheet3.Cells[siRow, 18].Value = item.SalesInvoice.CustomerId;
                     worksheet3.Cells[siRow, 20].Value = item.SalesInvoice.ProductId;
                     worksheet3.Cells[siRow, 21].Value = item.SalesInvoice.SalesInvoiceNo;
                     worksheet3.Cells[siRow, 22].Value = item.SalesInvoice.SalesInvoiceId;
                     worksheet3.Cells[siRow, 23].Value = item.SalesInvoice.PostedBy;
-                    worksheet3.Cells[siRow, 24].Value = item.SalesInvoice.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[siRow, 24].Value = item.SalesInvoice.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[siRow, 25].Value = item.SalesInvoice.EditedBy;
-                    worksheet3.Cells[siRow, 26].Value = item.SalesInvoice.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[siRow, 26].Value = item.SalesInvoice.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[siRow, 27].Value = item.SalesInvoice.CanceledBy;
-                    worksheet3.Cells[siRow, 28].Value = item.SalesInvoice.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[siRow, 28].Value = item.SalesInvoice.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[siRow, 29].Value = item.SalesInvoice.VoidedBy;
-                    worksheet3.Cells[siRow, 30].Value = item.SalesInvoice.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[siRow, 30].Value = item.SalesInvoice.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     siRow++;
                 }
@@ -2199,20 +2202,20 @@ namespace Accounting_System.Controllers
                     worksheet4.Cells[svRow, 11].Value = item.ServiceInvoice.Instructions;
                     worksheet4.Cells[svRow, 12].Value = item.ServiceInvoice.IsPaid;
                     worksheet4.Cells[svRow, 13].Value = item.ServiceInvoice.CreatedBy;
-                    worksheet4.Cells[svRow, 14].Value = item.ServiceInvoice.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet4.Cells[svRow, 14].Value = item.ServiceInvoice.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet4.Cells[svRow, 15].Value = item.ServiceInvoice.CancellationRemarks;
                     worksheet4.Cells[svRow, 16].Value = item.ServiceInvoice.CustomerId;
                     worksheet4.Cells[svRow, 17].Value = item.ServiceInvoice.ServiceInvoiceNo;
                     worksheet4.Cells[svRow, 18].Value = item.ServiceInvoice.ServicesId;
                     worksheet4.Cells[svRow, 19].Value = item.ServiceInvoice.ServiceInvoiceId;
                     worksheet4.Cells[svRow, 20].Value = item.ServiceInvoice.PostedBy;
-                    worksheet4.Cells[svRow, 21].Value = item.ServiceInvoice.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet4.Cells[svRow, 21].Value = item.ServiceInvoice.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet4.Cells[svRow, 22].Value = item.ServiceInvoice.EditedBy;
-                    worksheet4.Cells[svRow, 23].Value = item.ServiceInvoice.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet4.Cells[svRow, 23].Value = item.ServiceInvoice.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet4.Cells[svRow, 24].Value = item.ServiceInvoice.CanceledBy;
-                    worksheet4.Cells[svRow, 25].Value = item.ServiceInvoice.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet4.Cells[svRow, 25].Value = item.ServiceInvoice.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet4.Cells[svRow, 26].Value = item.ServiceInvoice.VoidedBy;
-                    worksheet4.Cells[svRow, 27].Value = item.ServiceInvoice.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet4.Cells[svRow, 27].Value = item.ServiceInvoice.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     svRow++;
                 }
@@ -2243,20 +2246,20 @@ namespace Accounting_System.Controllers
                     worksheet3.Cells[siRow, 12].Value = item.IsTaxAndVatPaid;
                     worksheet3.Cells[siRow, 13].Value = item.DueDate.ToString("yyyy-MM-dd");
                     worksheet3.Cells[siRow, 14].Value = item.CreatedBy;
-                    worksheet3.Cells[siRow, 15].Value = item.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[siRow, 15].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[siRow, 16].Value = item.CancellationRemarks;
                     worksheet3.Cells[siRow, 18].Value = item.CustomerId;
                     worksheet3.Cells[siRow, 20].Value = item.ProductId;
                     worksheet3.Cells[siRow, 21].Value = item.SalesInvoiceNo;
                     worksheet3.Cells[siRow, 22].Value = item.SalesInvoiceId;
                     worksheet3.Cells[siRow, 23].Value = item.PostedBy;
-                    worksheet3.Cells[siRow, 24].Value = item.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[siRow, 24].Value = item.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[siRow, 25].Value = item.EditedBy;
-                    worksheet3.Cells[siRow, 26].Value = item.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[siRow, 26].Value = item.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[siRow, 27].Value = item.CanceledBy;
-                    worksheet3.Cells[siRow, 28].Value = item.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[siRow, 28].Value = item.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[siRow, 29].Value = item.VoidedBy;
-                    worksheet3.Cells[siRow, 30].Value = item.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[siRow, 30].Value = item.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     siRow++;
                 }
@@ -2282,7 +2285,7 @@ namespace Accounting_System.Controllers
                     worksheet2.Cells[offsetRow, 4].Value = item.IsRemoved;
                     worksheet2.Cells[offsetRow, 5].Value = item.Amount;
                     worksheet2.Cells[offsetRow, 6].Value = item.CreatedBy;
-                    worksheet2.Cells[offsetRow, 7].Value = item.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet2.Cells[offsetRow, 7].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet2.Cells[offsetRow, 8].Value = item.AccountTitle;
 
                     offsetRow++;
@@ -2312,304 +2315,7 @@ namespace Accounting_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Import(IFormFile file, CancellationToken cancellationToken)
         {
-            if (file.Length == 0)
-            {
-                TempData["error"] = "The Excel file length is zero!.";
-                return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-            }
-
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-
-            try
-            {
-
-                await using var stream = file.OpenReadStream();
-                using var package = new ExcelPackage(stream);
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "CollectionReceipt");
-
-                var worksheet2 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "SalesInvoice");
-
-                var worksheet3 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "ServiceInvoice");
-
-                if (worksheet == null)
-                {
-                    TempData["error"] = "The Excel file contains no worksheets.";
-                    return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-                }
-                if (worksheet.ToString() != "CollectionReceipt")
-                {
-                    TempData["error"] = "The Excel file is not related to collection receipt.";
-                    return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-                }
-
-                if (worksheet2 != null)
-                {
-                    var rows = _salesInvoiceRepo.ParseWorksheet(worksheet2);
-                    var lookup = await _salesInvoiceRepo.BuildLookupSalesInvoiceContextAsync(rows, cancellationToken);
-
-                    var salesInvoices = new List<SalesInvoice>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            salesInvoices.Add(_salesInvoiceRepo.MapToSalesInvoiceEntity(row, lookup));
-                            auditTrails.AddRange(_salesInvoiceRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _salesInvoiceRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _salesInvoiceRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                    existing.SalesInvoiceNo,
-                                    "IBS-RCD");
-                            }
-                        }
-                    }
-
-                    _dbContext.SalesInvoices.AddRange(salesInvoices);
-                    _dbContext.AuditTrails.AddRange(auditTrails);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                if (worksheet3 != null)
-                {
-                    var rows = _serviceInvoiceRepo.ParseWorksheet(worksheet3);
-                    var lookup = await _serviceInvoiceRepo.BuildLookupServiceInvoiceContextAsync(rows, cancellationToken);
-
-                    var serviceInvoices = new List<ServiceInvoice>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            serviceInvoices.Add(_serviceInvoiceRepo.MapToServiceInvoiceEntity(row, lookup));
-                            auditTrails.AddRange(_serviceInvoiceRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _serviceInvoiceRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _serviceInvoiceRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                    existing.ServiceInvoiceNo,
-                                    "IBS-RCD");
-                            }
-                        }
-                    }
-
-                    _dbContext.ServiceInvoices.AddRange(serviceInvoices);
-                    _dbContext.AuditTrails.AddRange(auditTrails);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                if (worksheet != null)
-                {
-                    var rows = _receiptRepo.ParseWorksheet(worksheet);
-                    var lookup = await _receiptRepo.BuildLookupCollectionReceiptContextAsync(rows, cancellationToken);
-
-                    var collectionReceipts = new List<CollectionReceipt>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        CollectionReceipt collectionReceipt;
-                        var hasCollectionReceipt = lookup.ExistingCollectionReceipt.TryGetValue(row.OriginalSeriesNumber, out var existing);
-                        if (!hasCollectionReceipt)
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            collectionReceipt = _receiptRepo.MapToCollectionReceiptEntity(row, lookup);
-                            collectionReceipts.Add(collectionReceipt);
-                            auditTrails.AddRange(_receiptRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                            existing = collectionReceipt;
-                        }
-                        else
-                        {
-                            var changes = _receiptRepo.Detect(existing, row, lookup.ExistingLogs);
-
-                            if (changes.Any())
-                            {
-                                await _receiptRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                    existing.CollectionReceiptNo,
-                                    "IBS-RCD");
-                            }
-
-                            collectionReceipt = existing;
-                        }
-                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && !hasCollectionReceipt)
-                        {
-                            existing.IsPosted = true;
-                            existing.PostedBy = row.PostedBy;
-                            existing.PostedDate = row.PostedDate;
-
-                            await _receiptRepo.CollectionReceiptPosting(row, cancellationToken);
-
-                            var paymentSalesInvoiceId = collectionReceipt.SalesInvoiceId;
-                            var paymentMultipleSIIds = collectionReceipt.MultipleSIId;
-                            var paymentMultipleSI = collectionReceipt.MultipleSI;
-                            var paymentMultipleAmounts = collectionReceipt.SIMultipleAmount;
-                            var paymentServiceInvoiceId = collectionReceipt.ServiceInvoiceId;
-
-                            if (paymentSalesInvoiceId != null)
-                            {
-                                if (await _dbContext.SalesInvoices.AnyAsync(x => x.SalesInvoiceId == paymentSalesInvoiceId, cancellationToken))
-                                {
-                                    await _receiptRepo.UpdateInvoice(paymentSalesInvoiceId.Value, collectionReceipt.Total, 0, cancellationToken);
-                                }
-                            }
-                            else if (paymentMultipleSIIds != null && paymentMultipleSI != null && paymentMultipleAmounts != null)
-                            {
-                                var presentInvoices = await _dbContext.SalesInvoices.CountAsync(x => paymentMultipleSIIds.Contains(x.SalesInvoiceId), cancellationToken);
-                                if (paymentMultipleSIIds.Length == paymentMultipleAmounts.Length && presentInvoices == paymentMultipleSIIds.Length)
-                                {
-                                    await _receiptRepo.UpdateMultipleInvoice(paymentMultipleSI, paymentMultipleAmounts, 0, cancellationToken);
-                                }
-                            }
-                            else if (paymentServiceInvoiceId != null)
-                            {
-                                if (await _dbContext.ServiceInvoices.AnyAsync(x => x.ServiceInvoiceId == paymentServiceInvoiceId, cancellationToken))
-                                {
-                                    await _receiptRepo.UpdateSv(paymentServiceInvoiceId.Value, collectionReceipt.Total, 0, cancellationToken);
-                                }
-                            }
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && !hasCollectionReceipt)
-                        {
-                            if (existing.IsPosted)
-                            {
-                                existing.IsPosted = false;
-                            }
-
-                            existing.IsVoided = true;
-                            existing.VoidedBy = row.VoidedBy;
-                            existing.VoidedDate = row.VoidedDate;
-
-                            await _dbContext.SaveChangesAsync(cancellationToken);
-
-                            var findCashReceiptBook = await _dbContext.CashReceiptBooks.AnyAsync(crb => crb.RefNo == row.CollectionReceiptNo, cancellationToken);
-                            var findGeneralLedgerBook = await _dbContext.GeneralLedgerBooks.AnyAsync(gl => gl.Reference == row.CollectionReceiptNo, cancellationToken);
-
-                            if (findCashReceiptBook)
-                            {
-                                await _generalRepo.RemoveRecords<CashReceiptBook>(crb => crb.RefNo == row.CollectionReceiptNo, cancellationToken);
-                            }
-
-                            if (findGeneralLedgerBook)
-                            {
-                                await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == row.CollectionReceiptNo, cancellationToken);
-                            }
-
-                            var series = collectionReceipt.SINo ?? collectionReceipt.SVNo;
-                            var findOffsetting = await _dbContext.Offsettings
-                                .Where(offset => offset.Source == row.CollectionReceiptNo && offset.Reference == series)
-                                .ToListAsync(cancellationToken);
-                            if (findOffsetting.Any())
-                            {
-                                await _generalRepo.RemoveRecords<Offsetting>(offset => offset.Source == row.CollectionReceiptNo && offset.Reference == series, cancellationToken);
-                            }
-
-                            if ((!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default) || findCashReceiptBook || findGeneralLedgerBook)
-                            {
-                                var offsetAmount = findOffsetting.Sum(offset => offset.Amount);
-                                var voidSalesInvoiceId = collectionReceipt.SalesInvoiceId;
-                                var voidMultipleSIIds = collectionReceipt.MultipleSIId;
-                                var voidMultipleAmounts = collectionReceipt.SIMultipleAmount;
-                                var voidServiceInvoiceId = collectionReceipt.ServiceInvoiceId;
-
-                                if (collectionReceipt.SINo != null && voidSalesInvoiceId != null)
-                                {
-                                    if (await _dbContext.SalesInvoices.AnyAsync(x => x.SalesInvoiceId == voidSalesInvoiceId, cancellationToken))
-                                    {
-                                        await _receiptRepo.RemoveSIPayment(voidSalesInvoiceId.Value, collectionReceipt.Total, offsetAmount, cancellationToken);
-                                    }
-                                }
-                                else if (collectionReceipt.SVNo != null && voidServiceInvoiceId != null)
-                                {
-                                    if (await _dbContext.ServiceInvoices.AnyAsync(x => x.ServiceInvoiceId == voidServiceInvoiceId, cancellationToken))
-                                    {
-                                        await _receiptRepo.RemoveSVPayment(voidServiceInvoiceId, collectionReceipt.Total, offsetAmount, cancellationToken);
-                                    }
-                                }
-                                else if (collectionReceipt.MultipleSI != null && voidMultipleSIIds != null && voidMultipleAmounts != null)
-                                {
-                                    var presentInvoices = await _dbContext.SalesInvoices.CountAsync(x => voidMultipleSIIds.Contains(x.SalesInvoiceId), cancellationToken);
-                                    if (voidMultipleSIIds.Length == voidMultipleAmounts.Length && presentInvoices == voidMultipleSIIds.Length)
-                                    {
-                                        await _receiptRepo.RemoveMultipleSIPayment(voidMultipleSIIds, voidMultipleAmounts, offsetAmount, cancellationToken);
-                                    }
-                                }
-                            }
-                        }
-                        await _receiptRepo.CheckSalesInvoiceAmountsAsync(row, lookup.ExistingLogs, cancellationToken);
-                    }
-
-                    _dbContext.CollectionReceipts.AddRange(collectionReceipts);
-                    _dbContext.AuditTrails.AddRange(auditTrails);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                var checkChangesOfRecord = await _dbContext.ImportExportLogs
-                    .Where(iel => iel.Action == string.Empty).ToListAsync(cancellationToken);
-                if (checkChangesOfRecord.Any())
-                {
-                    TempData["importChanges"] = "";
-                }
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch (OperationCanceledException oce)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = oce.Message;
-                return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-            }
-            catch (InvalidOperationException ioe)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["warning"] = ioe.Message;
-                return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = ex.Message;
-                return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-            }
-
-            TempData["success"] = "Uploading Success!";
-            return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
+            return await WorkbookImport.RunAsync(this, file, "CollectionReceipt", cancellationToken);
         }
 
         #endregion
@@ -2618,211 +2324,8 @@ namespace Accounting_System.Controllers
         #region -- import xlsx record to AAS --
 
         [HttpPost]
-        public async Task<IActionResult> AasImport(IFormFile file, CancellationToken cancellationToken)
-        {
-            if (file.Length == 0)
-            {
-                TempData["error"] = "The Excel file length is zero!.";
-                return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-            }
-
-            await using var transaction = await _aasDbContext.Database.BeginTransactionAsync(cancellationToken);
-
-            try
-            {
-                await using var stream = file.OpenReadStream();
-                using var package = new ExcelPackage(stream);
-
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "CollectionReceipt");
-
-                var worksheet2 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "SalesInvoice");
-
-                var worksheet3 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "ServiceInvoice");
-
-                if (worksheet == null)
-                {
-                    TempData["error"] = "The Excel file contains no worksheets.";
-                    return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-                }
-
-                if (worksheet.ToString() != nameof(DynamicView.CollectionReceipt))
-                {
-                    TempData["error"] = "The Excel file is not related to collection receipt.";
-                    return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-                }
-
-                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                var createdBy = await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
-
-                #region -- Sales Invoice
-
-                if (worksheet2 != null)
-                {
-                    var rows = _salesInvoiceRepo.ParseWorksheet(worksheet2);
-                    var lookup = await _salesInvoiceRepo.BuildLookupSalesInvoiceContextForAasAsync(rows, cancellationToken);
-
-                    var salesInvoices = new List<SalesInvoice>();
-                    var auditTrails = new List<AuditTrail>();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            salesInvoices.Add(_salesInvoiceRepo.MapToSalesInvoiceEntity(row, lookup));
-                            auditTrails.AddRange(_salesInvoiceRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _salesInvoiceRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _salesInvoiceRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    createdBy,
-                                    existing.SalesInvoiceNo,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.SalesInvoices.AddRange(salesInvoices);
-                    _aasDbContext.AuditTrails.AddRange(auditTrails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion
-
-                #region -- Service Invoice
-
-                if (worksheet3 != null)
-                {
-                    var rows = _serviceInvoiceRepo.ParseWorksheet(worksheet3);
-                    var lookup = await _serviceInvoiceRepo.BuildLookupServiceInvoiceContextForAasAsync(rows, cancellationToken);
-
-                    var serviceInvoices = new List<ServiceInvoice>();
-                    var auditTrails = new List<AuditTrail>();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            serviceInvoices.Add(_serviceInvoiceRepo.MapToServiceInvoiceEntity(row, lookup));
-                            auditTrails.AddRange(_serviceInvoiceRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _serviceInvoiceRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _serviceInvoiceRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    createdBy,
-                                    existing.ServiceInvoiceNo,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.ServiceInvoices.AddRange(serviceInvoices);
-                    _aasDbContext.AuditTrails.AddRange(auditTrails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion
-
-                #region -- Collection Receipt
-
-                if (worksheet != null)
-                {
-                    var rows = _receiptRepo.ParseWorksheet(worksheet);
-                    var lookup = await _receiptRepo.BuildLookupCollectionReceiptContextForAasAsync(rows, cancellationToken);
-
-                    var collectionReceipts = new List<CollectionReceipt>();
-                    var auditTrails = new List<AuditTrail>();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingCollectionReceipt.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            collectionReceipts.Add(_receiptRepo.MapToCollectionReceiptEntity(row, lookup));
-                            auditTrails.AddRange(_receiptRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _receiptRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _receiptRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    createdBy,
-                                    existing.CollectionReceiptNo,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.CollectionReceipts.AddRange(collectionReceipts);
-                    _aasDbContext.AuditTrails.AddRange(auditTrails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion
-
-                var checkChangesOfRecord = await _dbContext.ImportExportLogs
-                    .Where(iel => iel.Action == string.Empty).ToListAsync(cancellationToken);
-                if (checkChangesOfRecord.Any())
-                {
-                    TempData["importChanges"] = "";
-                }
-
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch (OperationCanceledException oce)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = oce.Message;
-                return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-            }
-            catch (InvalidOperationException ioe)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["warning"] = ioe.Message;
-                return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = ex.Message;
-                return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-            }
-
-            TempData["success"] = "Uploading Success!";
-            return RedirectToAction(nameof(CollectionIndex), new { view = DynamicView.CollectionReceipt });
-        }
+        public Task<IActionResult> AasImport(IFormFile file, CancellationToken cancellationToken)
+            => WorkbookImport.RunAsync(this, file, "CollectionReceipt", cancellationToken, aas: true);
 
         #endregion
     }

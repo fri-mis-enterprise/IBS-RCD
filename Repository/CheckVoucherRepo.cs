@@ -1,4 +1,4 @@
-﻿using Accounting_System.Data;
+using Accounting_System.Data;
 using Accounting_System.DTOs;
 using Accounting_System.Models;
 using Accounting_System.Models.AccountsPayable;
@@ -93,6 +93,7 @@ namespace Accounting_System.Repository
 
         public async Task LogChangesAsync(int id, Dictionary<string, (string OriginalValue, string NewValue)> changes, string? modifiedBy, string seriesNumber, string databaseName)
         {
+            var batch = DateTime.Now;
             foreach (var change in changes)
             {
                 var logReport = new ImportExportLog
@@ -104,7 +105,7 @@ namespace Accounting_System.Repository
                     Module = "Check Voucher Header",
                     OriginalValue = change.Value.OriginalValue,
                     AdjustedValue = change.Value.NewValue,
-                    TimeStamp = DateTime.Now,
+                    TimeStamp = batch,
                     UploadedBy = modifiedBy,
                     Action = string.Empty,
                     Executed = false,
@@ -143,63 +144,59 @@ namespace Accounting_System.Repository
             ExcelWorksheet worksheet,
             CancellationToken cancellationToken = default)
         {
+            var sheet = new ImportWorksheet(worksheet);
             var rows = new List<CheckVoucherUploadExcelFileViewModel>();
             var rowCount = worksheet.Dimension.Rows;
 
 
             for (var row = 2; row <= rowCount; row++)
             {
+                if (sheet.IsEmpty(row)) continue;
 
 
                 rows.Add(new CheckVoucherUploadExcelFileViewModel
                 {
                     CheckVoucherHeaderNo = string.Empty,
-                    Date = DateOnly.FromDateTime(worksheet.Cells[row, 1].GetValue<DateTime>()),
-                    RRNo = worksheet.Cells[row, 2].Text.Split(',').Select(rrNo => rrNo.Trim()).ToArray(),
-                    SINo = worksheet.Cells[row, 3].Text.Split(',').Select(rrNo => rrNo.Trim()).ToArray(),
-                    PONo = worksheet.Cells[row, 4].Text.Split(',').Select(rrNo => rrNo.Trim()).ToArray(),
-                    Particulars = StringHelper.NormalizeString(worksheet.Cells[row, 5].GetValue<string>()),
-                    CheckNo = StringHelper.NormalizeString(worksheet.Cells[row, 6].GetValue<string>()),
-                    Category = StringHelper.NormalizeString(worksheet.Cells[row, 7].GetValue<string>()),
-                    Payee = StringHelper.NormalizeString(worksheet.Cells[row, 8].GetValue<string>()),
-                    CheckDate = DateOnly.FromDateTime(worksheet.Cells[row, 9].GetValue<DateTime>()),
-                    StartDate = DateOnly.FromDateTime(worksheet.Cells[row, 10].GetValue<DateTime>()),
-                    EndDate = DateOnly.FromDateTime(worksheet.Cells[row, 11].GetValue<DateTime>()),
-                    NumberOfMonths = worksheet.Cells[row, 12].GetValue<int>(),
-                    NumberOfMonthsCreated = worksheet.Cells[row, 13].GetValue<int>(),
-                    LastCreatedDate = worksheet.Cells[row, 14].GetValue<DateTime>(),
-                    AmountPerMonth = worksheet.Cells[row, 15].GetValue<decimal>(),
-                    IsComplete = worksheet.Cells[row, 16].GetValue<bool>(),
-                    AccruedType = StringHelper.NormalizeString(worksheet.Cells[row, 17].GetValue<string>()),
-                    Reference = StringHelper.NormalizeString(worksheet.Cells[row, 18].GetValue<string>()),
-                    CreatedBy = StringHelper.NormalizeString(worksheet.Cells[row, 19].GetValue<string>()),
-                    CreatedDate = worksheet.Cells[row, 20].GetValue<DateTime>(),
-                    PostedBy = StringHelper.NormalizeString(worksheet.Cells[row, 32].GetValue<string>()),
-                    PostedDate = worksheet.Cells[row, 33].GetValue<DateTime>(),
-                    Total = worksheet.Cells[row, 21].GetValue<decimal>(),
-                    Amount = worksheet.Cells[row, 22].Text.Split(' ').Select(arrayAmount =>
+                    Date = DateOnly.FromDateTime(sheet.Date(row, "TransactionDate", true, "Date")),
+                    RRNo = sheet.Text(row, "ReceivingReportNo", "RRNo").Split(',').Select(rrNo => rrNo.Trim()).ToArray(),
+                    SINo = sheet.Text(row, "SalesInvoiceNo", "SINo").Split(',').Select(rrNo => rrNo.Trim()).ToArray(),
+                    PONo = sheet.Text(row, "PurchaseOrderNo", "PONo").Split(',').Select(rrNo => rrNo.Trim()).ToArray(),
+                    Particulars = sheet.Text(row, "Particulars"),
+                    CheckNo = sheet.Text(row, "CheckNo"),
+                    Category = sheet.Text(row, "Category"),
+                    Payee = sheet.Text(row, "Payee"),
+                    CheckDate = DateOnly.FromDateTime(sheet.Date(row, "CheckDate")),
+                    StartDate = DateOnly.FromDateTime(sheet.Date(row, "StartDate")),
+                    EndDate = DateOnly.FromDateTime(sheet.Date(row, "EndDate")),
+                    NumberOfMonths = sheet.Value<int>(row, "NumberOfMonths"),
+                    NumberOfMonthsCreated = sheet.Value<int>(row, "NumberOfMonthsCreated"),
+                    LastCreatedDate = sheet.Date(row, "LastCreatedDate"),
+                    AmountPerMonth = sheet.Value<decimal>(row, "AmountPerMonth"),
+                    IsComplete = sheet.Value<bool>(row, "IsComplete"),
+                    AccruedType = sheet.Text(row, "AccruedType"),
+                    Reference = sheet.Text(row, "Reference"),
+                    CreatedBy = sheet.Text(row, "CreatedBy"),
+                    CreatedDate = sheet.Date(row, "CreatedDate", true),
+                    PostedBy = sheet.Text(row, "PostedBy"),
+                    PostedDate = sheet.Date(row, "PostedDate"),
+                    Total = sheet.Value<decimal>(row, "Total"),
+                    Amount = sheet.Text(row, "Amount").Split(' ').Select(arrayAmount =>
                                                              decimal.TryParse(arrayAmount.Trim(), out decimal amount) ? amount : 0).ToArray(),
-                    CheckAmount = worksheet.Cells[row, 23].GetValue<decimal>(),
-                    CvType = StringHelper.NormalizeString(worksheet.Cells[row, 24].GetValue<string>()),
-                    AmountPaid = worksheet.Cells[row, 25].GetValue<decimal>(),
-                    IsPaid = worksheet.Cells[row, 26].GetValue<bool>(),
-                    CancellationRemarks = StringHelper.NormalizeString(worksheet.Cells[row, 27].GetValue<string>()),
-                    OriginalBankId = worksheet.Cells[row, 28].GetValue<int>(),
-                    OriginalSeriesNumber = StringHelper.NormalizeString(worksheet.Cells[row, 29].GetValue<string>()),
-                    OriginalSupplierId = worksheet.Cells[row, 30].GetValue<int>(),
-                    OriginalDocumentId = worksheet.Cells[row, 31].GetValue<int>(),
-                    CanceledBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 36].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 36].GetValue<string>()),
-                    CanceledDate = worksheet.Cells[row, 37].GetValue<DateTime>(),
-                    VoidedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 38].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 38].GetValue<string>()),
-                    VoidedDate = worksheet.Cells[row, 39].GetValue<DateTime>(),
-                    EditedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 34].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 34].GetValue<string>()),
-                    EditedDate = worksheet.Cells[row, 35].GetValue<DateTime>()
+                    CheckAmount = sheet.Value<decimal>(row, "CheckAmount"),
+                    CvType = sheet.Text(row, "CvType"),
+                    AmountPaid = sheet.Value<decimal>(row, "AmountPaid"),
+                    IsPaid = sheet.Value<bool>(row, "IsPaid"),
+                    CancellationRemarks = sheet.Text(row, "CancellationRemarks"),
+                    OriginalBankId = sheet.Value<int>(row, "OriginalBankId"),
+                    OriginalSeriesNumber = sheet.Text(row, "OriginalCVNo", "OriginalSeriesNumber"),
+                    OriginalSupplierId = sheet.Value<int>(row, "OriginalSupplierId"),
+                    OriginalDocumentId = sheet.Value<int>(row, "OriginalDocumentId"),
+                    CanceledBy = sheet.Text(row, "CanceledBy"),
+                    CanceledDate = sheet.Date(row, "CanceledDate"),
+                    VoidedBy = sheet.Text(row, "VoidedBy"),
+                    VoidedDate = sheet.Date(row, "VoidedDate"),
+                    EditedBy = sheet.Text(row, "EditedBy"),
+                    EditedDate = sheet.Date(row, "EditedDate")
                 });
             }
 
@@ -299,10 +296,10 @@ namespace Accounting_System.Repository
                     ? supplierId
                     : null,
 
-                BankId = row.CvType != "Invoicing" ? context.BankId.TryGetValue(row.OriginalBankId, out var bankId)
+                BankId = row.CvType != "Invoicing" && row.OriginalBankId != 0 ? context.BankId.TryGetValue(row.OriginalBankId, out var bankId)
                     ? bankId
                     : throw new InvalidOperationException(
-                        "Please upload the Excel file for the bank account master file first.")
+                        $"CheckVoucherHeader '{row.OriginalSeriesNumber}': bank source ID {row.OriginalBankId} was not found. Import the matching BankAccount master or include its BankAccount sheet in this workbook.")
                     : null
             };
         }
@@ -436,8 +433,8 @@ namespace Accounting_System.Repository
                 row.NumberOfMonthsCreated.ToString());
 
             _generalRepo.Compare(changes, logs, "LastCreatedDate",
-                (entity.LastCreatedDate ?? DateTime.MinValue).ToString(CS.DateTime_Format_For_Validation),
-                row.LastCreatedDate.ToString(CS.DateTime_Format_For_Validation));
+                (entity.LastCreatedDate ?? DateTime.MinValue).ToString(CS.ImportDateTimeFormat),
+                row.LastCreatedDate.ToString(CS.ImportDateTimeFormat));
 
             _generalRepo.Compare(changes, logs, "AmountPerMonth",
                 entity.AmountPerMonth.ToString(CS.Four_Decimal_Format),
@@ -456,23 +453,23 @@ namespace Accounting_System.Repository
                 row.CreatedBy);
 
             _generalRepo.Compare(changes, logs, "CreatedDate",
-                entity.CreatedDate.ToString(CS.DateTime_Format_For_Validation),
-                row.CreatedDate.ToString(CS.DateTime_Format_For_Validation));
+                entity.CreatedDate.ToString(CS.ImportDateTimeFormat),
+                row.CreatedDate.ToString(CS.ImportDateTimeFormat));
 
             _generalRepo.Compare(changes, logs, "PostedBy",
                 StringHelper.NormalizeString(entity.PostedBy),
                 row.PostedBy);
 
             _generalRepo.Compare(changes, logs, "PostedDate",
-                (entity.PostedDate ?? DateTime.MinValue).ToString(CS.DateTime_Format_For_Validation),
-                row.PostedDate.ToString(CS.DateTime_Format_For_Validation));
+                (entity.PostedDate ?? DateTime.MinValue).ToString(CS.ImportDateTimeFormat),
+                row.PostedDate.ToString(CS.ImportDateTimeFormat));
 
             _generalRepo.Compare(changes, logs, "Total",
                 entity.Total.ToString(CS.Four_Decimal_Format),
                 row.Total.ToString(CS.Four_Decimal_Format));
 
             _generalRepo.Compare(changes, logs, "Amount",
-                string.Join(",", entity.Amount ?? Array.Empty<decimal>()),
+                string.Join(",", (entity.Amount ?? Array.Empty<decimal>()).Select(x => x.ToString(CS.Four_Decimal_Format))),
                 string.Join(",", row.Amount.Select(x => x.ToString(CS.Four_Decimal_Format))));
 
             _generalRepo.Compare(changes, logs, "CheckAmount",
@@ -482,14 +479,6 @@ namespace Accounting_System.Repository
             _generalRepo.Compare(changes, logs, "CvType",
                 StringHelper.NormalizeString(entity.CvType),
                 row.CvType);
-
-            _generalRepo.Compare(changes, logs, "AmountPaid",
-                entity.AmountPaid.ToString(CS.Four_Decimal_Format),
-                row.AmountPaid.ToString(CS.Four_Decimal_Format));
-
-            _generalRepo.Compare(changes, logs, "IsPaid",
-                entity.IsPaid.ToString(),
-                row.IsPaid.ToString());
 
             _generalRepo.Compare(changes, logs, "CancellationRemarks",
                 StringHelper.NormalizeString(entity.CancellationRemarks),
@@ -511,6 +500,31 @@ namespace Accounting_System.Repository
                 entity.OriginalDocumentId.ToString(),
                 row.OriginalDocumentId.ToString());
 
+            _generalRepo.Compare(changes, logs, "EditedBy",
+                StringHelper.NormalizeString(entity.EditedBy), StringHelper.NormalizeString(row.EditedBy));
+            _generalRepo.Compare(changes, logs, "EditedDate",
+                (entity.EditedDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.EditedDate.ToString(CS.ImportDateTimeFormat));
+
+            _generalRepo.Compare(changes, logs, "CanceledBy",
+                StringHelper.NormalizeString(entity.CanceledBy), StringHelper.NormalizeString(row.CanceledBy));
+            _generalRepo.Compare(changes, logs, "CanceledDate",
+                (entity.CanceledDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.CanceledDate.ToString(CS.ImportDateTimeFormat));
+
+            _generalRepo.Compare(changes, logs, "VoidedBy",
+                StringHelper.NormalizeString(entity.VoidedBy), StringHelper.NormalizeString(row.VoidedBy));
+            _generalRepo.Compare(changes, logs, "VoidedDate",
+                (entity.VoidedDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.VoidedDate.ToString(CS.ImportDateTimeFormat));
+
+            DbContext referenceDb = _aasDbContext.ChangeTracker.Entries<CheckVoucherHeader>().Any(x => ReferenceEquals(x.Entity, entity))
+                ? _aasDbContext : _dbContext;
+            var sourceReference = referenceDb.Set<CheckVoucherHeader>().Where(x => x.CheckVoucherHeaderNo == entity.Reference)
+                .Select(x => x.OriginalSeriesNumber).FirstOrDefault() ?? entity.Reference;
+            _generalRepo.Compare(changes, logs, "Reference",
+                StringHelper.NormalizeString(sourceReference), StringHelper.NormalizeString(row.Reference));
+
             return changes;
         }
 
@@ -527,23 +541,115 @@ namespace Accounting_System.Repository
             return $"CV{1:D10}";
         }
 
+        public async Task DetectPaymentWorksheetsAsync(ExcelWorksheet? headerWorksheet, ExcelWorksheet? tradeWorksheet,
+            ExcelWorksheet? multipleWorksheet, string uploadedBy, bool forAas, CancellationToken token)
+        {
+            if (headerWorksheet == null) return;
+            DbContext sourceDb = forAas ? _aasDbContext : _dbContext;
+            var databaseName = forAas ? "AAS" : "IBS-RCD";
+            var keys = (await ParseWorksheet(headerWorksheet, token)).Select(x => x.OriginalSeriesNumber).ToList();
+            var headers = await sourceDb.Set<CheckVoucherHeader>().Where(x => keys.Contains(x.OriginalSeriesNumber!)).ToListAsync(token);
+            if (headers.Count == 0) return;
+            var ids = headers.Select(x => x.CheckVoucherHeaderId).ToList();
+            if (tradeWorksheet is { } tradeSheet)
+            {
+                var rows = ParseWorksheetCvTradePayment(tradeSheet);
+                if (rows.Any(x => x.DocumentType != "RR")) throw new InvalidOperationException("Trade payments must reference DocumentType RR.");
+                var existing = await sourceDb.Set<CVTradePayment>().Where(x => ids.Contains(x.CheckVoucherId)).ToListAsync(token);
+                var reportIds = existing.Select(x => x.DocumentId).ToList();
+                var reports = await sourceDb.Set<ReceivingReport>().Where(x => reportIds.Contains(x.ReceivingReportId))
+                    .ToDictionaryAsync(x => x.ReceivingReportId, x => x.OriginalDocumentId, token);
+                foreach (var header in headers)
+                {
+                    var before = existing.Where(x => x.CheckVoucherId == header.CheckVoucherHeaderId).Select(x => new CvTradePaymentUploadExcelFileViewModel
+                    {
+                        DocumentId = reports.GetValueOrDefault(x.DocumentId, x.DocumentId), DocumentType = x.DocumentType,
+                        CheckVoucherId = header.OriginalDocumentId, AmountPaid = x.AmountPaid
+                    });
+                    var changes = DetectTradePayments(before, rows.Where(x => x.CheckVoucherId == header.OriginalDocumentId));
+                    if (changes.Count > 0) await LogChangesAsync(header.OriginalDocumentId, changes, uploadedBy, header.OriginalSeriesNumber!, databaseName);
+                }
+            }
+            if (multipleWorksheet is { } multipleSheet)
+            {
+                var rows = ParseWorksheetCvMultiplePayment(multipleSheet);
+                var existing = await sourceDb.Set<MultipleCheckVoucherPayment>().Where(x => ids.Contains(x.CheckVoucherHeaderPaymentId)).ToListAsync(token);
+                var invoiceIds = existing.Select(x => x.CheckVoucherHeaderInvoiceId).ToList();
+                var invoices = await sourceDb.Set<CheckVoucherHeader>().Where(x => invoiceIds.Contains(x.CheckVoucherHeaderId))
+                    .ToDictionaryAsync(x => x.CheckVoucherHeaderId, x => x.OriginalDocumentId, token);
+                foreach (var header in headers)
+                {
+                    var before = existing.Where(x => x.CheckVoucherHeaderPaymentId == header.CheckVoucherHeaderId).Select(x => new CvMultiplePaymentUploadExcelFileViewModel
+                    {
+                        CheckVoucherHeaderPaymentId = header.OriginalDocumentId,
+                        CheckVoucherHeaderInvoiceId = invoices.GetValueOrDefault(x.CheckVoucherHeaderInvoiceId, x.CheckVoucherHeaderInvoiceId), AmountPaid = x.AmountPaid
+                    });
+                    var changes = DetectMultiplePayments(before, rows.Where(x => x.CheckVoucherHeaderPaymentId == header.OriginalDocumentId));
+                    if (changes.Count > 0) await LogChangesAsync(header.OriginalDocumentId, changes, uploadedBy, header.OriginalSeriesNumber!, databaseName);
+                }
+            }
+        }
+
+        public Dictionary<string, (string Original, string New)> DetectTradePayments(
+            IEnumerable<CvTradePaymentUploadExcelFileViewModel> existing, IEnumerable<CvTradePaymentUploadExcelFileViewModel> uploaded)
+        {
+            var before = existing.OrderBy(x => x.DocumentId).ThenBy(x => x.DocumentType).ThenBy(x => x.AmountPaid).ToList();
+            var after = uploaded.OrderBy(x => x.DocumentId).ThenBy(x => x.DocumentType).ThenBy(x => x.AmountPaid).ToList();
+            var changes = new Dictionary<string, (string, string)>();
+            _generalRepo.Compare(changes, [], "CheckVoucherTradePayments.DocumentId",
+                string.Join(",", before.Select(x => x.DocumentId)),
+                string.Join(",", after.Select(x => x.DocumentId)));
+            _generalRepo.Compare(changes, [], "CheckVoucherTradePayments.DocumentType",
+                string.Join(",", before.Select(x => x.DocumentType)),
+                string.Join(",", after.Select(x => x.DocumentType)));
+            _generalRepo.Compare(changes, [], "CheckVoucherTradePayments.CheckVoucherId",
+                string.Join(",", before.Select(x => x.CheckVoucherId)),
+                string.Join(",", after.Select(x => x.CheckVoucherId)));
+            _generalRepo.Compare(changes, [], "CheckVoucherTradePayments.AmountPaid",
+                string.Join(",", before.Select(x => x.AmountPaid.ToString(CS.Four_Decimal_Format))),
+                string.Join(",", after.Select(x => x.AmountPaid.ToString(CS.Four_Decimal_Format))));
+            return changes;
+        }
+
+        public Dictionary<string, (string Original, string New)> DetectMultiplePayments(
+            IEnumerable<CvMultiplePaymentUploadExcelFileViewModel> existing, IEnumerable<CvMultiplePaymentUploadExcelFileViewModel> uploaded)
+        {
+            var before = existing.OrderBy(x => x.CheckVoucherHeaderInvoiceId).ThenBy(x => x.AmountPaid).ToList();
+            var after = uploaded.OrderBy(x => x.CheckVoucherHeaderInvoiceId).ThenBy(x => x.AmountPaid).ToList();
+            var changes = new Dictionary<string, (string, string)>();
+            _generalRepo.Compare(changes, [], "MultipleCheckVoucherPayments.CheckVoucherHeaderPaymentId",
+                string.Join(",", before.Select(x => x.CheckVoucherHeaderPaymentId)),
+                string.Join(",", after.Select(x => x.CheckVoucherHeaderPaymentId)));
+            _generalRepo.Compare(changes, [], "MultipleCheckVoucherPayments.CheckVoucherHeaderInvoiceId",
+                string.Join(",", before.Select(x => x.CheckVoucherHeaderInvoiceId)),
+                string.Join(",", after.Select(x => x.CheckVoucherHeaderInvoiceId)));
+            _generalRepo.Compare(changes, [], "MultipleCheckVoucherPayments.AmountPaid",
+                string.Join(",", before.Select(x => x.AmountPaid.ToString(CS.Four_Decimal_Format))),
+                string.Join(",", after.Select(x => x.AmountPaid.ToString(CS.Four_Decimal_Format))));
+            return changes;
+        }
+
         public IReadOnlyList<CvTradePaymentUploadExcelFileViewModel> ParseWorksheetCvTradePayment(
             ExcelWorksheet worksheet)
         {
+            var sheet = new ImportWorksheet(worksheet);
             var rows = new List<CvTradePaymentUploadExcelFileViewModel>();
             var rowCount = worksheet.Dimension.Rows;
 
             for (var row = 2; row <= rowCount; row++)
             {
+                if (sheet.IsEmpty(row)) continue;
                 rows.Add(new CvTradePaymentUploadExcelFileViewModel
                 {
-                    DocumentId = worksheet.Cells[row, 2].GetValue<int>(),
-                    DocumentType = "RR",
-                    CheckVoucherId = worksheet.Cells[row, 4].GetValue<int>(),
-                    AmountPaid = worksheet.Cells[row, 5].GetValue<decimal>(),
+                    DocumentId = sheet.Value<int>(row, "DocumentId"),
+                    DocumentType = sheet.HasColumn("DocumentType") ? sheet.Text(row, "DocumentType") : "RR",
+                    CheckVoucherId = sheet.Value<int>(row, "CheckVoucherId"),
+                    AmountPaid = sheet.Value<decimal>(row, "AmountPaid"),
                 });
             }
 
+            if (rows.Any(x => x.DocumentType != "RR"))
+                throw new InvalidOperationException("Trade payments must reference DocumentType RR.");
             return rows;
         }
 
@@ -590,17 +696,19 @@ namespace Accounting_System.Repository
         public IReadOnlyList<CvMultiplePaymentUploadExcelFileViewModel> ParseWorksheetCvMultiplePayment(
             ExcelWorksheet worksheet)
         {
+            var sheet = new ImportWorksheet(worksheet);
             var rows = new List<CvMultiplePaymentUploadExcelFileViewModel>();
             var rowCount = worksheet.Dimension.Rows;
 
             for (var row = 2; row <= rowCount; row++)
             {
+                if (sheet.IsEmpty(row)) continue;
                 rows.Add(new CvMultiplePaymentUploadExcelFileViewModel
                 {
                     Id = Guid.NewGuid(),
-                    CheckVoucherHeaderPaymentId = worksheet.Cells[row, 2].GetValue<int>(),
-                    CheckVoucherHeaderInvoiceId =worksheet.Cells[row, 3].GetValue<int>(),
-                    AmountPaid = worksheet.Cells[row, 4].GetValue<int>()
+                    CheckVoucherHeaderPaymentId = sheet.Value<int>(row, "CheckVoucherHeaderPaymentId"),
+                    CheckVoucherHeaderInvoiceId = sheet.Value<int>(row, "CheckVoucherHeaderInvoiceId"),
+                    AmountPaid = sheet.Value<decimal>(row, "AmountPaid")
                 });
             }
 
@@ -651,25 +759,30 @@ namespace Accounting_System.Repository
         public IReadOnlyList<CheckVoucherDetailsUploadExcelFileViewModel> ParseWorksheetCheckVoucherDetails(
             ExcelWorksheet worksheet)
         {
+            var sheet = new ImportWorksheet(worksheet);
             var rows = new List<CheckVoucherDetailsUploadExcelFileViewModel>();
             var rowCount = worksheet.Dimension.Rows;
 
             for (var row = 2; row <= rowCount; row++)
             {
+                if (sheet.IsEmpty(row)) continue;
                 rows.Add(new CheckVoucherDetailsUploadExcelFileViewModel
                 {
-                    AccountNo = worksheet.Cells[row, 1].GetValue<string>(),
-                    AccountName = worksheet.Cells[row, 2].GetValue<string>(),
-                    Debit = worksheet.Cells[row, 4].GetValue<decimal>(),
-                    Credit = worksheet.Cells[row, 5].GetValue<decimal>(),
-                    CvHeaderId = worksheet.Cells[row, 6].GetValue<int>(),
-                    OriginalDocumentId = worksheet.Cells[row, 7].GetValue<int>(),
-                    Amount = worksheet.Cells[row, 8].GetValue<decimal>(),
-                    AmountPaid = worksheet.Cells[row, 9].GetValue<decimal>(),
-                    SupplierId = worksheet.Cells[row, 10].GetValue<int>(),
-                    EwtPercent = worksheet.Cells[row, 11].GetValue<decimal>(),
-                    IsUserSelected = worksheet.Cells[row, 12].GetValue<bool>(),
-                    IsVatable = worksheet.Cells[row, 13].GetValue<bool>()
+                    SuppliedOptionalFields = new[] { "Amount", "AmountPaid", "SupplierId", "EwtPercent", "IsUserSelected", "IsVatable" }
+                        .Where(sheet.HasColumn).ToHashSet(),
+                    TransactionNo = sheet.HasColumn("TransactionNo") ? sheet.Text(row, "TransactionNo") : null,
+                    AccountNo = sheet.Text(row, "AccountNo"),
+                    AccountName = sheet.Text(row, "AccountName"),
+                    Debit = sheet.Value<decimal>(row, "Debit"),
+                    Credit = sheet.Value<decimal>(row, "Credit"),
+                    CvHeaderId = sheet.Value<int>(row, "CVHeaderId", "CheckVoucherHeaderId"),
+                    OriginalDocumentId = sheet.Value<int>(row, "OriginalDocumentId"),
+                    Amount = sheet.OptionalValue<decimal>(row, "Amount"),
+                    AmountPaid = sheet.OptionalValue<decimal>(row, "AmountPaid"),
+                    SupplierId = sheet.OptionalValue<int>(row, "SupplierId"),
+                    EwtPercent = sheet.OptionalValue<decimal>(row, "EwtPercent"),
+                    IsUserSelected = sheet.OptionalValue<bool>(row, "IsUserSelected"),
+                    IsVatable = sheet.OptionalValue<bool>(row, "IsVatable")
                 });
             }
 
@@ -687,6 +800,7 @@ namespace Accounting_System.Repository
             return new FindCheckVoucherDetailsInDbContextDto
             {
                 ExistingCheckVoucherDetail = await _dbContext.CheckVoucherDetails
+                    .Include(x => x.CheckVoucherHeader).Include(x => x.Supplier)
                     .Where(x => x.OriginalDocumentId.HasValue && originalDocumentId.Contains(x.OriginalDocumentId!.Value))
                     .GroupBy(x => x.OriginalDocumentId!.Value)
                     .Select(x => x.First())
@@ -710,6 +824,8 @@ namespace Accounting_System.Repository
             CheckVoucherDetailsUploadExcelFileViewModel row,
             FindCheckVoucherDetailsInDbContextDto context)
         {
+            context.ExistingCheckVoucherDetail.TryGetValue(row.OriginalDocumentId, out var existing);
+            bool Has(string field) => row.SuppliedOptionalFields?.Contains(field) != false;
             return new CheckVoucherDetail
             {
                 AccountNo = row.AccountNo,
@@ -720,14 +836,14 @@ namespace Accounting_System.Repository
                     ? checkVouchHeader.CheckVoucherHeaderId
                     : null,
                 OriginalDocumentId = row.OriginalDocumentId,
-                Amount = row.Amount,
-                AmountPaid = row.AmountPaid,
-                SupplierId = context.SupplierId.TryGetValue(row.SupplierId, out var supplierId)
+                Amount = Has("Amount") ? row.Amount : existing?.Amount ?? default,
+                AmountPaid = Has("AmountPaid") ? row.AmountPaid : existing?.AmountPaid ?? default,
+                SupplierId = !Has("SupplierId") ? existing?.SupplierId : context.SupplierId.TryGetValue(row.SupplierId, out var supplierId)
                     ? supplierId
                     : null,
-                EwtPercent = row.EwtPercent,
-                IsUserSelected = row.IsUserSelected,
-                IsVatable = row.IsVatable,
+                EwtPercent = Has("EwtPercent") ? row.EwtPercent : existing?.EwtPercent ?? default,
+                IsUserSelected = Has("IsUserSelected") ? row.IsUserSelected : existing?.IsUserSelected ?? default,
+                IsVatable = Has("IsVatable") ? row.IsVatable : existing?.IsVatable ?? default,
                 TransactionNo = checkVouchHeader!.CheckVoucherHeaderNo
             };
         }
@@ -763,25 +879,33 @@ namespace Accounting_System.Repository
                 entity.OriginalDocumentId.ToString() ?? "null",
                 row.OriginalDocumentId.ToString());
 
-            _generalRepo.Compare(changes, logs, "Amount",
+            if (row.SuppliedOptionalFields?.Contains("Amount") != false)
+                _generalRepo.Compare(changes, logs, "Amount",
                 entity.Amount.ToString(CS.Four_Decimal_Format),
                 row.Amount.ToString(CS.Four_Decimal_Format));
 
-            _generalRepo.Compare(changes, logs, "AmountPaid",
-                entity.AmountPaid.ToString(CS.Four_Decimal_Format),
-                row.AmountPaid.ToString(CS.Four_Decimal_Format));
-
-            _generalRepo.Compare(changes, logs, "EwtPercent",
+            if (row.SuppliedOptionalFields?.Contains("EwtPercent") != false)
+                _generalRepo.Compare(changes, logs, "EwtPercent",
                 entity.EwtPercent.ToString(CS.Four_Decimal_Format),
                 row.EwtPercent.ToString(CS.Four_Decimal_Format));
 
-            _generalRepo.Compare(changes, logs, "IsUserSelected",
+            if (row.SuppliedOptionalFields?.Contains("IsUserSelected") != false)
+                _generalRepo.Compare(changes, logs, "IsUserSelected",
                 entity.IsUserSelected.ToString(),
                 row.IsUserSelected.ToString());
 
-            _generalRepo.Compare(changes, logs, "IsVatable",
+            if (row.SuppliedOptionalFields?.Contains("IsVatable") != false)
+                _generalRepo.Compare(changes, logs, "IsVatable",
                 entity.IsVatable.ToString(),
                 row.IsVatable.ToString());
+
+            if (row.SuppliedOptionalFields?.Contains("SupplierId") != false)
+                _generalRepo.Compare(changes, logs, "SupplierId",
+                (entity.Supplier?.OriginalSupplierId ?? 0).ToString(), row.SupplierId.ToString());
+
+            if (row.TransactionNo != null)
+                _generalRepo.Compare(changes, logs, "TransactionNo",
+                    StringHelper.NormalizeString(entity.CheckVoucherHeader?.OriginalSeriesNumber ?? entity.TransactionNo), row.TransactionNo);
 
             return changes;
         }
@@ -878,6 +1002,7 @@ namespace Accounting_System.Repository
             return new FindCheckVoucherDetailsInDbContextDto
             {
                 ExistingCheckVoucherDetail = await _aasDbContext.CheckVoucherDetails
+                    .Include(x => x.CheckVoucherHeader).Include(x => x.Supplier)
                     .Where(x => x.OriginalDocumentId.HasValue && originalDocumentId.Contains(x.OriginalDocumentId!.Value))
                     .GroupBy(x => x.OriginalDocumentId!.Value)
                     .Select(x => x.First())

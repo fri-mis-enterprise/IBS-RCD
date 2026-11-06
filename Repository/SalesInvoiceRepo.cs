@@ -1,4 +1,4 @@
-﻿using Accounting_System.Data;
+using Accounting_System.Data;
 using Accounting_System.DTOs;
 using Accounting_System.Models;
 using Accounting_System.Models.AccountsReceivable;
@@ -154,6 +154,11 @@ namespace Accounting_System.Repository
         {
             foreach (var change in changes)
             {
+                if (change.Key == nameof(SalesInvoice.Status) && await _dbContext.ImportExportLogs.AnyAsync(log =>
+                    log.TableName == nameof(DynamicView.SalesInvoice) && log.DatabaseName == databaseName &&
+                    log.DocumentRecordId == id && log.DocumentNo == seriesNumber && log.ColumnName == change.Key &&
+                    log.OriginalValue == change.Value.OriginalValue && log.AdjustedValue == change.Value.NewValue &&
+                    log.Action == string.Empty)) continue;
                 var logReport = new ImportExportLog()
                 {
                     Id = Guid.NewGuid(),
@@ -177,56 +182,46 @@ namespace Accounting_System.Repository
         public IReadOnlyList<SalesInvoiceUploadExcelFileViewModel> ParseWorksheet(
             ExcelWorksheet worksheet)
         {
+            var sheet = new ImportWorksheet(worksheet);
             var rows = new List<SalesInvoiceUploadExcelFileViewModel>();
             var rowCount = worksheet.Dimension.Rows;
 
             for (var row = 2; row <= rowCount; row++)
             {
+                if (sheet.IsEmpty(row)) continue;
                 rows.Add(new SalesInvoiceUploadExcelFileViewModel
                 {
-                    SalesInvoiceNo = StringHelper.NormalizeString(worksheet.Cells[row, 27].GetValue<string>()),
-                    OtherRefNo = StringHelper.NormalizeString(worksheet.Cells[row, 1].GetValue<string>()),
+                    SalesInvoiceNo = sheet.Text(row, "OriginalSINo", "OriginalSeriesNumber", "SalesInvoiceNo"),
+                    OtherRefNo = sheet.Text(row, "OtherRefNo"),
 
-                    Quantity = worksheet.Cells[row, 2].GetValue<decimal>(),
-                    UnitPrice = worksheet.Cells[row, 3].GetValue<decimal>(),
-                    Amount = worksheet.Cells[row, 4].GetValue<decimal>(),
-                    Discount = worksheet.Cells[row, 11].GetValue<decimal>(),
+                    Quantity = sheet.RequiredValue<decimal>(row, "Quantity"),
+                    UnitPrice = sheet.RequiredValue<decimal>(row, "UnitPrice"),
+                    Amount = sheet.RequiredValue<decimal>(row, "Amount"),
+                    Discount = sheet.Value<decimal>(row, "Discount"),
 
-                    Remarks = StringHelper.NormalizeString(worksheet.Cells[row, 8].GetValue<string>()),
-                    Status = StringHelper.NormalizeString(worksheet.Cells[row, 9].GetValue<string>()),
+                    Remarks = sheet.Text(row, "Remarks"),
+                    Status = sheet.Text(row, "Status"),
 
-                    TransactionDate = DateOnly.FromDateTime(worksheet.Cells[row, 10].GetValue<DateTime>()),
-                    DueDate = DateOnly.FromDateTime(worksheet.Cells[row, 19].GetValue<DateTime>()),
+                    TransactionDate = DateOnly.FromDateTime(sheet.Date(row, "TransactionDate", true)),
+                    DueDate = DateOnly.FromDateTime(sheet.Date(row, "DueDate", true)),
 
-                    CreatedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 20].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 20].GetValue<string>()),
-                    CreatedDate = worksheet.Cells[row, 21].GetValue<DateTime>(),
+                    CreatedBy = sheet.Text(row, "CreatedBy"),
+                    CreatedDate = sheet.Date(row, "CreatedDate", true),
 
-                    PostedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 29].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 29].GetValue<string>()),
-                    PostedDate = worksheet.Cells[row, 30].GetValue<DateTime>(),
+                    PostedBy = sheet.Text(row, "PostedBy"),
+                    PostedDate = sheet.Date(row, "PostedDate"),
 
-                    CancellationRemarks = string.IsNullOrWhiteSpace(worksheet.Cells[row, 22].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 22].GetValue<string?>()),
-                    OriginalCustomerId = worksheet.Cells[row, 24].GetValue<int>(),
-                    OriginalProductId = worksheet.Cells[row, 26].GetValue<int>(),
-                    OriginalDocumentId = worksheet.Cells[row, 28].GetValue<int>(),
-                    OriginalSeriesNumber = StringHelper.NormalizeString(worksheet.Cells[row, 27].GetValue<string>()),
-                    CanceledBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 33].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 33].GetValue<string>()),
-                    CanceledDate = worksheet.Cells[row, 34].GetValue<DateTime>(),
-                    VoidedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 35].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 35].GetValue<string>()),
-                    VoidedDate = worksheet.Cells[row, 36].GetValue<DateTime>(),
-                    EditedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 31].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 31].GetValue<string>()),
-                    EditedDate = worksheet.Cells[row, 32].GetValue<DateTime>()
+                    CancellationRemarks = sheet.Text(row, "CancellationRemarks"),
+                    OriginalCustomerId = sheet.Value<int>(row, "OriginalCustomerId"),
+                    OriginalProductId = sheet.Value<int>(row, "OriginalProductId"),
+                    OriginalDocumentId = sheet.Value<int>(row, "OriginalDocumentId"),
+                    OriginalSeriesNumber = sheet.Text(row, "OriginalSINo", "OriginalSeriesNumber", "SalesInvoiceNo"),
+                    CanceledBy = sheet.Text(row, "CanceledBy"),
+                    CanceledDate = sheet.Date(row, "CanceledDate"),
+                    VoidedBy = sheet.Text(row, "VoidedBy"),
+                    VoidedDate = sheet.Date(row, "VoidedDate"),
+                    EditedBy = sheet.Text(row, "EditedBy"),
+                    EditedDate = sheet.Date(row, "EditedDate")
                 });
             }
 
@@ -271,6 +266,7 @@ namespace Accounting_System.Repository
             SalesInvoiceUploadExcelFileViewModel row,
             FindSalesInvoiceInDbContextDto context)
         {
+            var existingSalesInvoice = context.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var invoice);
             return new SalesInvoice
             {
                 SalesInvoiceNo = row.SalesInvoiceNo,
@@ -281,7 +277,7 @@ namespace Accounting_System.Repository
                 Discount = row.Discount,
 
                 Remarks = row.Remarks,
-                Status = row.Status,
+                Status = existingSalesInvoice ? invoice!.Status : row.Status,
 
                 TransactionDate = row.TransactionDate,
                 DueDate = row.DueDate,
@@ -289,17 +285,17 @@ namespace Accounting_System.Repository
                 CreatedBy = row.CreatedBy,
                 CreatedDate = row.CreatedDate,
 
-                IsPosted = !string.IsNullOrEmpty(row.PostedBy),
-                PostedBy = row.PostedBy,
-                PostedDate = row.PostedDate,
+                IsPosted = !existingSalesInvoice && !string.IsNullOrEmpty(row.PostedBy),
+                PostedBy = !existingSalesInvoice ? row.PostedBy : invoice!.PostedBy,
+                PostedDate = !existingSalesInvoice ? row.PostedDate : invoice!.PostedDate,
 
                 CancellationRemarks = row.CancellationRemarks,
-                IsCanceled = !string.IsNullOrEmpty(row.CanceledBy),
-                CanceledBy = row.CanceledBy,
-                CanceledDate = row.CanceledDate,
-                IsVoided = !string.IsNullOrEmpty(row.VoidedBy),
-                VoidedBy = row.VoidedBy,
-                VoidedDate = row.VoidedDate,
+                IsCanceled = !existingSalesInvoice && !string.IsNullOrEmpty(row.CanceledBy),
+                CanceledBy = !existingSalesInvoice ? row.CanceledBy : invoice!.CanceledBy,
+                CanceledDate = !existingSalesInvoice ? row.CanceledDate: invoice!.CanceledDate,
+                IsVoided = !existingSalesInvoice && !string.IsNullOrEmpty(row.VoidedBy),
+                VoidedBy = !existingSalesInvoice ? row.VoidedBy : invoice!.VoidedBy,
+                VoidedDate = !existingSalesInvoice ? row.VoidedDate : invoice!.VoidedDate,
                 EditedBy = row.EditedBy,
                 EditedDate = row.EditedDate,
                 OriginalCustomerId = row.OriginalCustomerId,
@@ -438,16 +434,16 @@ namespace Accounting_System.Repository
                 row.CreatedBy);
 
             _generalRepo.Compare(changes, logs, "CreatedDate",
-                entity.CreatedDate.ToString(CS.DateTime_Format_For_Validation),
-                row.CreatedDate.ToString(CS.DateTime_Format_For_Validation));
+                entity.CreatedDate.ToString(CS.ImportDateTimeFormat),
+                row.CreatedDate.ToString(CS.ImportDateTimeFormat));
 
             _generalRepo.Compare(changes, logs, "PostedBy",
                 StringHelper.NormalizeString(entity.PostedBy),
                 row.PostedBy);
 
             _generalRepo.Compare(changes, logs, "PostedDate",
-                entity.PostedDate?.ToString(CS.DateTime_Format_For_Validation) ?? string.Empty,
-                row.PostedDate.ToString(CS.DateTime_Format_For_Validation));
+                (entity.PostedDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.PostedDate.ToString(CS.ImportDateTimeFormat));
 
             _generalRepo.Compare(changes, logs, "CancellationRemarks",
                 StringHelper.NormalizeString(entity.CancellationRemarks),
@@ -468,6 +464,24 @@ namespace Accounting_System.Repository
             _generalRepo.Compare(changes, logs, "OriginalDocumentId",
                 StringHelper.NormalizeString(entity.OriginalDocumentId.ToString()),
                 StringHelper.NormalizeString(row.OriginalDocumentId.ToString()));
+
+            _generalRepo.Compare(changes, logs, "EditedBy",
+                StringHelper.NormalizeString(entity.EditedBy), StringHelper.NormalizeString(row.EditedBy));
+            _generalRepo.Compare(changes, logs, "EditedDate",
+                (entity.EditedDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.EditedDate.ToString(CS.ImportDateTimeFormat));
+
+            _generalRepo.Compare(changes, logs, "CanceledBy",
+                StringHelper.NormalizeString(entity.CanceledBy), StringHelper.NormalizeString(row.CanceledBy));
+            _generalRepo.Compare(changes, logs, "CanceledDate",
+                (entity.CanceledDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.CanceledDate.ToString(CS.ImportDateTimeFormat));
+
+            _generalRepo.Compare(changes, logs, "VoidedBy",
+                StringHelper.NormalizeString(entity.VoidedBy), StringHelper.NormalizeString(row.VoidedBy));
+            _generalRepo.Compare(changes, logs, "VoidedDate",
+                (entity.VoidedDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.VoidedDate.ToString(CS.ImportDateTimeFormat));
 
             return changes;
         }

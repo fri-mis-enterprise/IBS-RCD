@@ -54,6 +54,7 @@
         public const string Date_Format = "MMM dd, yyyy";
         public const string BIR_Date_Format = "MM/dd/yyyy";
         public const string DateOnly_Format_For_Validation = "yyyy-MM-dd";
+        public const string ImportDateTimeFormat = "yyyy-MM-dd HH:mm:ss.fffffff";
         public const string DateTime_Format_For_Validation = "yyyy-MM-dd hh:mm:ss.ffffff";
 
         #endregion Format string

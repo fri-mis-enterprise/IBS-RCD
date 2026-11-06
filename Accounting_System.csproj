@@ -6,6 +6,9 @@
 	<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Tests/**/*.cs" />
+    <Content Remove="Tests/**" />
+    <None Remove="Tests/**" />
     <None Remove="Views\Customer\CreateCOS.cshtml~RF777d1c.TMP" />
     <None Remove="Views\Report\MaturityAgingReport.cshtml~RF35c7a3.TMP" />
   </ItemGroup>

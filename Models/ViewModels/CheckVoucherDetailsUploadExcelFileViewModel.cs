@@ -2,6 +2,8 @@ namespace Accounting_System.Models.ViewModels
 {
     public class CheckVoucherDetailsUploadExcelFileViewModel
     {
+        public HashSet<string>? SuppliedOptionalFields { get; set; }
+        public string? TransactionNo { get; set; }
         public string AccountNo { get; set; }
         public string AccountName { get; set; }
         public decimal Debit { get; set; }

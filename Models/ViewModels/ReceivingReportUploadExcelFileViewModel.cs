@@ -29,5 +29,6 @@ namespace Accounting_System.Models.ViewModels
         public int OriginalPOId { get; set; }
         public string OriginalSeriesNumber { get; set; }
         public int OriginalDocumentId { get; set; }
+        public decimal? CanceledQuantity { get; set; }
     }
 }

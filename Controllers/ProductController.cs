@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Accounting_System.Data;
 using Accounting_System.Models.MasterFile;
 using Accounting_System.Models.Reports;
@@ -257,7 +257,7 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[row, 2].Value = item.ProductName;
                     worksheet.Cells[row, 3].Value = item.ProductUnit;
                     worksheet.Cells[row, 4].Value = item.CreatedBy;
-                    worksheet.Cells[row, 5].Value = item.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 5].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 6].Value = item.ProductId;
 
                     row++;
@@ -285,74 +285,7 @@ namespace Accounting_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Import(IFormFile file, CancellationToken cancellationToken)
         {
-            if (file.Length == 0)
-            {
-                return RedirectToAction(nameof(Index));
-            }
-
-            using (var stream = new MemoryStream())
-            {
-                await file.CopyToAsync(stream, cancellationToken);
-                stream.Position = 0;
-                await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-
-                try
-                {
-                    using var package = new ExcelPackage(stream);
-                    var worksheet = package.Workbook.Worksheets.FirstOrDefault();
-                    if (worksheet == null)
-                    {
-                        TempData["error"] = "The Excel file contains no worksheets.";
-                        return RedirectToAction(nameof(Index), new { view = DynamicView.Product });
-                    }
-                    if (worksheet.ToString() != nameof(DynamicView.Product))
-                    {
-                        TempData["error"] = "The Excel file is not related to product master file.";
-                        return RedirectToAction(nameof(Index), new { view = DynamicView.Product });
-                    }
-
-                    var rowCount = worksheet.Dimension.Rows;
-                    var productList = await _dbContext
-                        .Products
-                        .ToListAsync(cancellationToken);
-
-                    for (int row = 2; row <= rowCount; row++)  // Assuming the first row is the header
-                    {
-                        var product = new Product
-                        {
-                            ProductCode = worksheet.Cells[row, 1].Text,
-                            ProductName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(worksheet.Cells[row, 2].Text.ToLower()),
-                            ProductUnit = worksheet.Cells[row, 3].Text,
-                            CreatedBy = worksheet.Cells[row, 4].Text,
-                            CreatedDate = DateTime.TryParse(worksheet.Cells[row, 5].Text, out DateTime createdDate) ? createdDate : default,
-                            OriginalProductId = int.TryParse(worksheet.Cells[row, 6].Text, out int originalProductId) ? originalProductId : 0,
-                        };
-
-                        if (productList.Any(p => p.OriginalProductId == product.OriginalProductId))
-                        {
-                            continue;
-                        }
-
-                        await _dbContext.Products.AddAsync(product, cancellationToken);
-                    }
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                    await transaction.CommitAsync(cancellationToken);
-                }
-                catch (OperationCanceledException oce)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    TempData["error"] = oce.Message;
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.Product });
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    TempData["error"] = ex.Message;
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.Product });
-                }
-            }
-            TempData["success"] = "Uploading Success!";
-            return RedirectToAction(nameof(Index), new { view = DynamicView.Product });
+            return await WorkbookImport.RunAsync(this, file, "Product", cancellationToken);
         }
 
         #endregion
@@ -361,84 +294,8 @@ namespace Accounting_System.Controllers
         #region -- import xlsx record to AAS --
 
         [HttpPost]
-        public async Task<IActionResult> AasImport(IFormFile file, CancellationToken cancellationToken)
-        {
-            if (file.Length == 0)
-            {
-                return RedirectToAction(nameof(Index));
-            }
-
-            using (var stream = new MemoryStream())
-            {
-                await file.CopyToAsync(stream, cancellationToken);
-                stream.Position = 0;
-                await using var transaction = await _aasDbContext.Database.BeginTransactionAsync(cancellationToken);
-
-                try
-                {
-                    if (file.FileName.Contains(CS.Name))
-                    {
-                        using var package = new ExcelPackage(stream);
-                    var worksheet = package.Workbook.Worksheets.FirstOrDefault();
-                    if (worksheet == null)
-                    {
-                        TempData["error"] = "The Excel file contains no worksheets.";
-                        return RedirectToAction(nameof(Index), new { view = DynamicView.Product });
-                    }
-                    if (worksheet.ToString() != nameof(DynamicView.Product))
-                    {
-                        TempData["error"] = "The Excel file is not related to product master file.";
-                        return RedirectToAction(nameof(Index), new { view = DynamicView.Product });
-                    }
-
-                    var rowCount = worksheet.Dimension.Rows;
-                    var productList = await _aasDbContext
-                        .Products
-                        .ToListAsync(cancellationToken);
-
-                    for (int row = 2; row <= rowCount; row++)  // Assuming the first row is the header
-                    {
-                        var product = new Product
-                        {
-                            ProductCode = worksheet.Cells[row, 1].Text,
-                            ProductName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(worksheet.Cells[row, 2].Text.ToLower()),
-                            ProductUnit = worksheet.Cells[row, 3].Text,
-                            CreatedBy = worksheet.Cells[row, 4].Text,
-                            CreatedDate = DateTime.TryParse(worksheet.Cells[row, 5].Text, out DateTime createdDate) ? createdDate : default,
-                            OriginalProductId = int.TryParse(worksheet.Cells[row, 6].Text, out int originalProductId) ? originalProductId : 0,
-                        };
-
-                        if (productList.Any(p => p.OriginalProductId == product.OriginalProductId))
-                        {
-                            continue;
-                        }
-
-                        await _aasDbContext.Products.AddAsync(product, cancellationToken);
-                    }
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await transaction.CommitAsync(cancellationToken);
-                    }
-                    else
-                    {
-                        TempData["warning"] = "The Uploaded Excel file is not related to AAS.";
-                    }
-                }
-                catch (OperationCanceledException oce)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    TempData["error"] = oce.Message;
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.Product });
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    TempData["error"] = ex.Message;
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.Product });
-                }
-            }
-            TempData["success"] = "Uploading Success!";
-            return RedirectToAction(nameof(Index), new { view = DynamicView.Product });
-        }
+        public Task<IActionResult> AasImport(IFormFile file, CancellationToken cancellationToken)
+            => WorkbookImport.RunAsync(this, file, "Product", cancellationToken, aas: true);
 
         #endregion
     }

@@ -1,4 +1,6 @@
 ﻿using Accounting_System.Data;
+using Accounting_System.Utility;
+using System.Globalization;
 using Accounting_System.Models.Reports;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -227,6 +229,54 @@ namespace Accounting_System.Repository
             }
         }
 
+        public async Task<bool> SaveImportComparisonsAsync(CancellationToken token)
+        {
+            var added = _dbContext.ChangeTracker.Entries<ImportExportLog>()
+                .Where(x => x.State == EntityState.Added).ToList();
+            var ids = added.Select(x => x.Entity.DocumentRecordId).Distinct().ToList();
+            var tables = added.Select(x => x.Entity.TableName).Distinct().ToList();
+            var pending = await _dbContext.ImportExportLogs.AsNoTracking()
+                .Where(x => x.DatabaseName == "AAS" && x.Action == string.Empty && !x.Executed &&
+                    ids.Contains(x.DocumentRecordId) && tables.Contains(x.TableName)).ToListAsync(token);
+            static (string, string, int, string, string?, string?) Key(ImportExportLog log) =>
+                (log.DatabaseName, log.TableName, log.DocumentRecordId, log.ColumnName, log.OriginalValue, log.AdjustedValue);
+            var seen = pending.Select(Key).ToHashSet();
+            foreach (var entry in added)
+                if (entry.Entity.DatabaseName == "AAS" && !seen.Add(Key(entry.Entity)))
+                    entry.State = EntityState.Detached;
+            var hasChanges = added.Any(x => x.State == EntityState.Added);
+            await _dbContext.SaveChangesAsync(token);
+            return hasChanges;
+        }
+
+        public void LogMasterComparison(DbContext sourceDb, object existing, object uploaded, string module,
+            string uploadedBy, params string[] preserve)
+        {
+            var entry = sourceDb.Entry(existing);
+            var values = sourceDb.Entry(uploaded).CurrentValues;
+            static string Display(object? value) => value switch
+            {
+                null => string.Empty,
+                DateTime date when date == default => string.Empty,
+                DateTime date => date.ToString(CS.ImportDateTimeFormat, CultureInfo.InvariantCulture),
+                _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty
+            };
+            foreach (var property in entry.Metadata.GetProperties())
+            {
+                if (property.IsPrimaryKey() || preserve.Contains(property.Name)) continue;
+                var before = Display(entry.Property(property.Name).CurrentValue);
+                var after = Display(values[property.Name]);
+                if (before == after) continue;
+                var id = Convert.ToInt32(entry.Property(entry.Metadata.FindPrimaryKey()!.Properties[0].Name).CurrentValue);
+                _dbContext.ImportExportLogs.Add(new ImportExportLog
+                {
+                    Id = Guid.NewGuid(), TableName = module, Module = module, DocumentRecordId = id,
+                    DocumentNo = id.ToString(), ColumnName = property.Name, OriginalValue = before, AdjustedValue = after,
+                    UploadedBy = uploadedBy, TimeStamp = DateTime.Now, Action = string.Empty, Executed = false, DatabaseName = "AAS"
+                });
+            }
+        }
+
         public void Compare(
             IDictionary<string, (string, string)> changes,
             IEnumerable<ImportExportLog> logs,
@@ -235,14 +285,6 @@ namespace Accounting_System.Repository
             string adjusted)
         {
             if (original == adjusted)
-            {
-                return;
-            }
-
-            if (logs.Any(l =>
-                    l.ColumnName == column &&
-                    l.OriginalValue == original &&
-                    l.AdjustedValue == adjusted))
             {
                 return;
             }

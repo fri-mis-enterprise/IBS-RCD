@@ -1,4 +1,4 @@
-﻿using Accounting_System.Data;
+using Accounting_System.Data;
 using Accounting_System.DTOs;
 using Accounting_System.Models;
 using Accounting_System.Models.AccountsReceivable;
@@ -616,111 +616,95 @@ namespace Accounting_System.Repository
         public IReadOnlyList<CollectionReceiptUploadExcelFileViewModel> ParseWorksheet(
             ExcelWorksheet worksheet)
         {
+            var sheet = new ImportWorksheet(worksheet);
             var rows = new List<CollectionReceiptUploadExcelFileViewModel>();
             var rowCount = worksheet.Dimension.Rows;
 
             for (var row = 2; row <= rowCount; row++)
             {
+                if (sheet.IsEmpty(row)) continue;
                 rows.Add(new CollectionReceiptUploadExcelFileViewModel
                 {
-                    CollectionReceiptNo = StringHelper.NormalizeString(worksheet.Cells[row, 30].GetValue<string>()),
-                    TransactionDate = DateOnly.FromDateTime(worksheet.Cells[row, 1].GetValue<DateTime>()),
-                    ReferenceNo = StringHelper.NormalizeString(worksheet.Cells[row, 2].GetValue<string>()),
-                    Remarks = string.IsNullOrWhiteSpace(worksheet.Cells[row, 3].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 3].GetValue<string>()),
-                    CashAmount = worksheet.Cells[row, 4].GetValue<decimal>(),
-                    CheckDate = string.IsNullOrWhiteSpace(worksheet.Cells[row, 5].Text)
+                    CollectionReceiptNo = sheet.Text(row, "OriginalCRNo", "OriginalSeriesNumber", "CollectionReceiptNo"),
+                    TransactionDate = DateOnly.FromDateTime(sheet.Date(row, "TransactionDate", true)),
+                    ReferenceNo = sheet.Text(row, "ReferenceNo"),
+                    Remarks = sheet.Text(row, "Remarks"),
+                    CashAmount = sheet.Value<decimal>(row, "CashAmount"),
+                    CheckDate = string.IsNullOrWhiteSpace(sheet.Text(row, "CheckDate"))
                         ? null
-                        : DateOnly.FromDateTime(worksheet.Cells[row, 5].GetValue<DateTime>()),
-                    CheckNo = string.IsNullOrWhiteSpace(worksheet.Cells[row, 6].Text)
+                        : DateOnly.FromDateTime(sheet.Date(row, "CheckDate")),
+                    CheckNo = string.IsNullOrWhiteSpace(sheet.Text(row, "CheckNo"))
                         ? null
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 6].GetValue<string>()),
-                    CheckBank = string.IsNullOrWhiteSpace(worksheet.Cells[row, 7].Text)
+                        : sheet.Text(row, "CheckNo"),
+                    CheckBank = string.IsNullOrWhiteSpace(sheet.Text(row, "CheckBank"))
                         ? null
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 7].GetValue<string>()),
-                    CheckBranch = string.IsNullOrWhiteSpace(worksheet.Cells[row, 8].Text)
+                        : sheet.Text(row, "CheckBank"),
+                    CheckBranch = string.IsNullOrWhiteSpace(sheet.Text(row, "CheckBranch"))
                         ? null
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 8].GetValue<string>()),
-                    CheckAmount = worksheet.Cells[row, 9].GetValue<decimal>(),
-                    ManagerCheckDate = string.IsNullOrWhiteSpace(worksheet.Cells[row, 10].Text)
+                        : sheet.Text(row, "CheckBranch"),
+                    CheckAmount = sheet.Value<decimal>(row, "CheckAmount"),
+                    ManagerCheckDate = string.IsNullOrWhiteSpace(sheet.Text(row, "ManagerCheckDate"))
                         ? null
-                        : DateOnly.FromDateTime(worksheet.Cells[row, 10].GetValue<DateTime>()),
-                    ManagerCheckNo = string.IsNullOrWhiteSpace(worksheet.Cells[row, 11].Text)
+                        : DateOnly.FromDateTime(sheet.Date(row, "ManagerCheckDate")),
+                    ManagerCheckNo = string.IsNullOrWhiteSpace(sheet.Text(row, "ManagerCheckNo"))
                         ? null
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 11].GetValue<string>()),
-                    ManagerCheckBank = string.IsNullOrWhiteSpace(worksheet.Cells[row, 12].Text)
+                        : sheet.Text(row, "ManagerCheckNo"),
+                    ManagerCheckBank = string.IsNullOrWhiteSpace(sheet.Text(row, "ManagerCheckBank"))
                         ? null
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 12].GetValue<string>()),
-                    ManagerCheckBranch = string.IsNullOrWhiteSpace(worksheet.Cells[row, 13].Text)
+                        : sheet.Text(row, "ManagerCheckBank"),
+                    ManagerCheckBranch = string.IsNullOrWhiteSpace(sheet.Text(row, "ManagerCheckBranch"))
                         ? null
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 13].GetValue<string>()),
-                    ManagerCheckAmount = worksheet.Cells[row, 14].GetValue<decimal>(),
-                    EWT = worksheet.Cells[row, 15].GetValue<decimal>(),
-                    WVAT = worksheet.Cells[row, 16].GetValue<decimal>(),
-                    Total = worksheet.Cells[row, 17].GetValue<decimal>(),
-                    IsCertificateUpload = worksheet.Cells[row, 18].GetValue<bool>(),
-                    F2306FilePath = string.IsNullOrWhiteSpace(worksheet.Cells[row, 19].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 19].GetValue<string>()),
-                    F2307FilePath = string.IsNullOrWhiteSpace(worksheet.Cells[row, 20].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 20].GetValue<string>()),
-                    CreatedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 21].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 21].GetValue<string>()),
-                    CreatedDate = worksheet.Cells[row, 22].GetValue<DateTime>(),
-                    PostedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 33].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 33].GetValue<string>()),
-                    PostedDate = worksheet.Cells[row, 34].GetValue<DateTime>(),
-                    CancellationRemarks = string.IsNullOrWhiteSpace(worksheet.Cells[row, 23].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 23].GetValue<string>()),
-                    MultipleSI = string.IsNullOrWhiteSpace(worksheet.Cells[row, 24].Text)
+                        : sheet.Text(row, "ManagerCheckBranch"),
+                    ManagerCheckAmount = sheet.Value<decimal>(row, "ManagerCheckAmount"),
+                    EWT = sheet.Value<decimal>(row, "EWT"),
+                    WVAT = sheet.Value<decimal>(row, "WVAT"),
+                    Total = sheet.Value<decimal>(row, "Total"),
+                    IsCertificateUpload = sheet.Value<bool>(row, "IsCertificateUpload"),
+                    F2306FilePath = sheet.Text(row, "F2306FilePath"),
+                    F2307FilePath = sheet.Text(row, "F2307FilePath"),
+                    CreatedBy = sheet.Text(row, "CreatedBy"),
+                    CreatedDate = sheet.Date(row, "CreatedDate", true),
+                    PostedBy = sheet.Text(row, "PostedBy"),
+                    PostedDate = sheet.Date(row, "PostedDate"),
+                    CancellationRemarks = sheet.Text(row, "CancellationRemarks"),
+                    MultipleSI = string.IsNullOrWhiteSpace(sheet.Text(row, "MultipleSI"))
                         ? null
-                        : worksheet.Cells[row, 24].Text
+                        : sheet.Text(row, "MultipleSI")
                             .Split(',', StringSplitOptions.RemoveEmptyEntries)
                             .Select(si => si.Trim())
                             .ToArray(),
 
-                    MultipleSIId = string.IsNullOrWhiteSpace(worksheet.Cells[row, 25].Text)
+                    MultipleSIId = string.IsNullOrWhiteSpace(sheet.Text(row, "MultipleSIId"))
                         ? null
-                        : worksheet.Cells[row, 25].Text
+                        : sheet.Text(row, "MultipleSIId")
                             .Split(',', StringSplitOptions.RemoveEmptyEntries)
                             .Select(x => int.TryParse(x.Trim(), out var id) ? id : 0)
                             .ToArray(),
 
-                    SIMultipleAmount = string.IsNullOrWhiteSpace(worksheet.Cells[row, 26].Text)
+                    SIMultipleAmount = string.IsNullOrWhiteSpace(sheet.Text(row, "SIMultipleAmount"))
                         ? null
-                        : worksheet.Cells[row, 26].Text
+                        : sheet.Text(row, "SIMultipleAmount")
                             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
                             .Select(x => decimal.TryParse(x.Trim(), out var amt) ? amt : 0m)
                             .ToArray(),
 
-                    MultipleTransactionDate = string.IsNullOrWhiteSpace(worksheet.Cells[row, 27].Text)
+                    MultipleTransactionDate = string.IsNullOrWhiteSpace(sheet.Text(row, "MultipleTransactionDate"))
                         ? null
-                        : worksheet.Cells[row, 27].Text
+                        : sheet.Text(row, "MultipleTransactionDate")
                             .Split(',', StringSplitOptions.RemoveEmptyEntries)
                             .Select(x => DateOnly.TryParse(x.Trim(), out var d) ? d : default)
                             .ToArray(),
-                    OriginalCustomerId = worksheet.Cells[row, 28].GetValue<int>(),
-                    OriginalSalesInvoiceId = worksheet.Cells[row, 29].GetValue<int>(),
-                    OriginalSeriesNumber = StringHelper.NormalizeString(worksheet.Cells[row, 30].GetValue<string>()),
-                    OriginalServiceInvoiceId = worksheet.Cells[row, 31].GetValue<int>(),
-                    OriginalDocumentId = worksheet.Cells[row, 32].GetValue<int>(),
-                    CanceledBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 37].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 37].GetValue<string>()),
-                    CanceledDate = worksheet.Cells[row, 38].GetValue<DateTime>(),
-                    VoidedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 39].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 39].GetValue<string>()),
-                    VoidedDate = worksheet.Cells[row, 40].GetValue<DateTime>(),
-                    EditedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 35].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 35].GetValue<string>()),
-                    EditedDate = worksheet.Cells[row, 36].GetValue<DateTime>()
+                    OriginalCustomerId = sheet.Value<int>(row, "OriginalCustomerId"),
+                    OriginalSalesInvoiceId = sheet.Value<int>(row, "OriginalSalesInvoiceId"),
+                    OriginalSeriesNumber = sheet.Text(row, "OriginalCRNo", "OriginalSeriesNumber", "CollectionReceiptNo"),
+                    OriginalServiceInvoiceId = sheet.Value<int>(row, "OriginalServiceInvoiceId"),
+                    OriginalDocumentId = sheet.Value<int>(row, "OriginalDocumentId"),
+                    CanceledBy = sheet.Text(row, "CanceledBy"),
+                    CanceledDate = sheet.Date(row, "CanceledDate"),
+                    VoidedBy = sheet.Text(row, "VoidedBy"),
+                    VoidedDate = sheet.Date(row, "VoidedDate"),
+                    EditedBy = sheet.Text(row, "EditedBy"),
+                    EditedDate = sheet.Date(row, "EditedDate")
                 });
             }
 
@@ -1102,36 +1086,41 @@ namespace Accounting_System.Repository
                 row.CreatedBy);
 
             _generalRepo.Compare(changes, logs, "CreatedDate",
-                entity.CreatedDate.ToString(CS.DateTime_Format_For_Validation),
-                row.CreatedDate.ToString(CS.DateTime_Format_For_Validation));
+                entity.CreatedDate.ToString(CS.ImportDateTimeFormat),
+                row.CreatedDate.ToString(CS.ImportDateTimeFormat));
 
             _generalRepo.Compare(changes, logs, "PostedBy",
                 StringHelper.NormalizeString(entity.PostedBy),
                 row.PostedBy);
 
             _generalRepo.Compare(changes, logs, "PostedDate",
-                entity.PostedDate?.ToString(CS.DateTime_Format_For_Validation)  ?? string.Empty,
-                row.PostedDate.ToString(CS.DateTime_Format_For_Validation));
+                entity.PostedDate?.ToString(CS.ImportDateTimeFormat)  ?? string.Empty,
+                row.PostedDate.ToString(CS.ImportDateTimeFormat));
 
             _generalRepo.Compare(changes, logs, "CancellationRemarks",
                 StringHelper.NormalizeString(entity.CancellationRemarks),
                 row.CancellationRemarks);
 
             _generalRepo.Compare(changes, logs, "MultipleSI",
-                StringHelper.NormalizeString(entity.MultipleSI?.ToString()),
-                StringHelper.NormalizeString(row.MultipleSI?.ToString()));
+                string.Join(",", (entity.MultipleSI ?? Array.Empty<string>()).Select(x => x)),
+                string.Join(",", (row.MultipleSI ?? Array.Empty<string>()).Select(x => x)));
+
+            var localIds = entity.MultipleSIId ?? Array.Empty<int>();
+            var fromAas = _aasDbContext.ChangeTracker.Entries<CollectionReceipt>().Any(x => ReferenceEquals(x.Entity, entity));
+            var sourceIds = fromAas ? new Dictionary<int, int>() : _dbContext.SalesInvoices
+                .Where(x => localIds.Contains(x.SalesInvoiceId)).ToDictionary(x => x.SalesInvoiceId, x => x.OriginalDocumentId);
 
             _generalRepo.Compare(changes, logs, "MultipleSIId",
-                StringHelper.NormalizeString(entity.MultipleSIId?.ToString()),
-                StringHelper.NormalizeString(row.MultipleSIId?.ToString()));
+                string.Join(",", localIds.Select(id => sourceIds.GetValueOrDefault(id, id))),
+                string.Join(",", row.MultipleSIId ?? Array.Empty<int>()));
 
             _generalRepo.Compare(changes, logs, "SIMultipleAmount",
-                StringHelper.NormalizeString(entity.SIMultipleAmount?.ToString()),
-                StringHelper.NormalizeString(row.SIMultipleAmount?.ToString()));
+                string.Join(",", (entity.SIMultipleAmount ?? Array.Empty<decimal>()).Select(x => x.ToString(CS.Four_Decimal_Format))),
+                string.Join(",", (row.SIMultipleAmount ?? Array.Empty<decimal>()).Select(x => x.ToString(CS.Four_Decimal_Format))));
 
             _generalRepo.Compare(changes, logs, "MultipleTransactionDate",
-                StringHelper.NormalizeString(entity.MultipleTransactionDate?.ToString()),
-                StringHelper.NormalizeString(row.MultipleTransactionDate?.ToString()));
+                string.Join(",", (entity.MultipleTransactionDate ?? Array.Empty<DateOnly>()).Select(x => x.ToString(CS.DateOnly_Format_For_Validation))),
+                string.Join(",", (row.MultipleTransactionDate ?? Array.Empty<DateOnly>()).Select(x => x.ToString(CS.DateOnly_Format_For_Validation))));
 
             _generalRepo.Compare(changes, logs, "OriginalCustomerId",
                 StringHelper.NormalizeString(entity.OriginalCustomerId.ToString()),
@@ -1152,6 +1141,24 @@ namespace Accounting_System.Repository
             _generalRepo.Compare(changes, logs, "OriginalDocumentId",
                 StringHelper.NormalizeString(entity.OriginalDocumentId.ToString()),
                 StringHelper.NormalizeString(row.OriginalDocumentId.ToString()));
+
+            _generalRepo.Compare(changes, logs, "EditedBy",
+                StringHelper.NormalizeString(entity.EditedBy), StringHelper.NormalizeString(row.EditedBy));
+            _generalRepo.Compare(changes, logs, "EditedDate",
+                (entity.EditedDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.EditedDate.ToString(CS.ImportDateTimeFormat));
+
+            _generalRepo.Compare(changes, logs, "CanceledBy",
+                StringHelper.NormalizeString(entity.CanceledBy), StringHelper.NormalizeString(row.CanceledBy));
+            _generalRepo.Compare(changes, logs, "CanceledDate",
+                (entity.CanceledDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.CanceledDate.ToString(CS.ImportDateTimeFormat));
+
+            _generalRepo.Compare(changes, logs, "VoidedBy",
+                StringHelper.NormalizeString(entity.VoidedBy), StringHelper.NormalizeString(row.VoidedBy));
+            _generalRepo.Compare(changes, logs, "VoidedDate",
+                (entity.VoidedDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.VoidedDate.ToString(CS.ImportDateTimeFormat));
 
             return changes;
         }

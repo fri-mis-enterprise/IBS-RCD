@@ -1,4 +1,4 @@
-﻿using Accounting_System.Data;
+using Accounting_System.Data;
 using Accounting_System.DTOs;
 using Accounting_System.Models;
 using Accounting_System.Models.AccountsPayable;
@@ -105,39 +105,35 @@ namespace Accounting_System.Repository
         public IReadOnlyList<JournalVoucherUploadExcelFileViewModel> ParseWorksheet(
             ExcelWorksheet worksheet)
         {
+            var sheet = new ImportWorksheet(worksheet);
             var rows = new List<JournalVoucherUploadExcelFileViewModel>();
             var rowCount = worksheet.Dimension.Rows;
 
             for (var row = 2; row <= rowCount; row++)
             {
+                if (sheet.IsEmpty(row)) continue;
                 rows.Add(new JournalVoucherUploadExcelFileViewModel
                 {
-                    JournalVoucherHeaderNo = StringHelper.NormalizeString(worksheet.Cells[row, 10].GetValue<string>()),
-                    Date = DateOnly.FromDateTime(worksheet.Cells[row, 1].GetValue<DateTime>()),
-                    References = StringHelper.NormalizeString(worksheet.Cells[row, 2].GetValue<string>()),
-                    Particulars = StringHelper.NormalizeString(worksheet.Cells[row, 3].GetValue<string>()),
-                    CRNo = StringHelper.NormalizeString(worksheet.Cells[row, 4].GetValue<string>()),
-                    JVReason = StringHelper.NormalizeString(worksheet.Cells[row, 5].GetValue<string>()),
-                    CreatedBy = StringHelper.NormalizeString(worksheet.Cells[row, 6].GetValue<string>()),
-                    CreatedDate = worksheet.Cells[row, 7].GetValue<DateTime>(),
-                    PostedBy = StringHelper.NormalizeString(worksheet.Cells[row, 12].GetValue<string>()),
-                    PostedDate = worksheet.Cells[row, 13].GetValue<DateTime>(),
-                    CancellationRemarks = StringHelper.NormalizeString(worksheet.Cells[row, 8].GetValue<string>()),
-                    OriginalCVId = worksheet.Cells[row, 9].GetValue<int>(),
-                    OriginalSeriesNumber = StringHelper.NormalizeString(worksheet.Cells[row, 10].GetValue<string>()),
-                    OriginalDocumentId = worksheet.Cells[row, 11].GetValue<int>(),
-                    CanceledBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 16].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 16].GetValue<string>()),
-                    CanceledDate = worksheet.Cells[row, 17].GetValue<DateTime>(),
-                    VoidedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 18].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 18].GetValue<string>()),
-                    VoidedDate = worksheet.Cells[row, 19].GetValue<DateTime>(),
-                    EditedBy = string.IsNullOrWhiteSpace(worksheet.Cells[row, 14].Text)
-                        ? string.Empty
-                        : StringHelper.NormalizeString(worksheet.Cells[row, 14].GetValue<string>()),
-                    EditedDate = worksheet.Cells[row, 15].GetValue<DateTime>()
+                    JournalVoucherHeaderNo = sheet.Text(row, "OriginalJVNo", "OriginalSeriesNumber", "JournalVoucherHeaderNo"),
+                    Date = DateOnly.FromDateTime(sheet.Date(row, "TransactionDate", true, "Date")),
+                    References = sheet.Text(row, "Reference", "References"),
+                    Particulars = sheet.Text(row, "Particulars"),
+                    CRNo = sheet.Text(row, "CRNo"),
+                    JVReason = sheet.Text(row, "JVReason"),
+                    CreatedBy = sheet.Text(row, "CreatedBy"),
+                    CreatedDate = sheet.Date(row, "CreatedDate", true),
+                    PostedBy = sheet.Text(row, "PostedBy"),
+                    PostedDate = sheet.Date(row, "PostedDate"),
+                    CancellationRemarks = sheet.Text(row, "CancellationRemarks"),
+                    OriginalCVId = sheet.Value<int>(row, "OriginalCVId"),
+                    OriginalSeriesNumber = sheet.Text(row, "OriginalJVNo", "OriginalSeriesNumber", "JournalVoucherHeaderNo"),
+                    OriginalDocumentId = sheet.Value<int>(row, "OriginalDocumentId"),
+                    CanceledBy = sheet.Text(row, "CanceledBy"),
+                    CanceledDate = sheet.Date(row, "CanceledDate"),
+                    VoidedBy = sheet.Text(row, "VoidedBy"),
+                    VoidedDate = sheet.Date(row, "VoidedDate"),
+                    EditedBy = sheet.Text(row, "EditedBy"),
+                    EditedDate = sheet.Date(row, "EditedDate")
                 });
             }
 
@@ -228,7 +224,7 @@ namespace Accounting_System.Repository
                 OriginalSeriesNumber = row.OriginalSeriesNumber,
                 OriginalDocumentId = row.OriginalDocumentId,
 
-                CVId = context.CvId.TryGetValue(row.OriginalCVId, out var cvId)
+                CVId = row.OriginalCVId == 0 ? null : context.CvId.TryGetValue(row.OriginalCVId, out var cvId)
                     ? cvId
                     : throw new InvalidOperationException(
                         "Please upload the Excel file for the check voucher first.")
@@ -340,16 +336,16 @@ namespace Accounting_System.Repository
                 row.CreatedBy);
 
             _generalRepo.Compare(changes, logs, "CreatedDate",
-                entity.CreatedDate.ToString(CS.DateTime_Format_For_Validation),
-                row.CreatedDate.ToString(CS.DateTime_Format_For_Validation));
+                entity.CreatedDate.ToString(CS.ImportDateTimeFormat),
+                row.CreatedDate.ToString(CS.ImportDateTimeFormat));
 
             _generalRepo.Compare(changes, logs, "PostedBy",
                 StringHelper.NormalizeString(entity.PostedBy),
                 row.PostedBy);
 
             _generalRepo.Compare(changes, logs, "PostedDate",
-                entity.PostedDate?.ToString(CS.DateTime_Format_For_Validation) ?? "null",
-                row.PostedDate.ToString(CS.DateTime_Format_For_Validation));
+                (entity.PostedDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.PostedDate.ToString(CS.ImportDateTimeFormat));
 
             _generalRepo.Compare(changes, logs, "CancellationRemarks",
                 StringHelper.NormalizeString(entity.CancellationRemarks),
@@ -367,26 +363,46 @@ namespace Accounting_System.Repository
                 entity.OriginalDocumentId.ToString(),
                 row.OriginalDocumentId.ToString());
 
+            _generalRepo.Compare(changes, logs, "EditedBy",
+                StringHelper.NormalizeString(entity.EditedBy), StringHelper.NormalizeString(row.EditedBy));
+            _generalRepo.Compare(changes, logs, "EditedDate",
+                (entity.EditedDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.EditedDate.ToString(CS.ImportDateTimeFormat));
+
+            _generalRepo.Compare(changes, logs, "CanceledBy",
+                StringHelper.NormalizeString(entity.CanceledBy), StringHelper.NormalizeString(row.CanceledBy));
+            _generalRepo.Compare(changes, logs, "CanceledDate",
+                (entity.CanceledDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.CanceledDate.ToString(CS.ImportDateTimeFormat));
+
+            _generalRepo.Compare(changes, logs, "VoidedBy",
+                StringHelper.NormalizeString(entity.VoidedBy), StringHelper.NormalizeString(row.VoidedBy));
+            _generalRepo.Compare(changes, logs, "VoidedDate",
+                (entity.VoidedDate ?? default).ToString(CS.ImportDateTimeFormat),
+                row.VoidedDate.ToString(CS.ImportDateTimeFormat));
+
             return changes;
         }
 
         public IReadOnlyList<JournalVoucherDetailsUploadExcelFileViewModel> ParseWorksheetJournalVoucherDetails(
             ExcelWorksheet worksheet)
         {
+            var sheet = new ImportWorksheet(worksheet);
             var rows = new List<JournalVoucherDetailsUploadExcelFileViewModel>();
             var rowCount = worksheet.Dimension.Rows;
 
             for (var row = 2; row <= rowCount; row++)
             {
+                if (sheet.IsEmpty(row)) continue;
                 rows.Add(new JournalVoucherDetailsUploadExcelFileViewModel
                 {
-                    AccountNo = StringHelper.NormalizeString(worksheet.Cells[row, 1].GetValue<string>()),
-                    AccountName = StringHelper.NormalizeString(worksheet.Cells[row, 2].GetValue<string>()),
-                    TransactionNo = StringHelper.NormalizeString(worksheet.Cells[row, 3].GetValue<string>()),
-                    Debit = worksheet.Cells[row, 4].GetValue<decimal>(),
-                    Credit = worksheet.Cells[row, 5].GetValue<decimal>(),
-                    JournalVoucherHeaderId = worksheet.Cells[row, 6].GetValue<int>(),
-                    OriginalDocumentId = worksheet.Cells[row, 7].GetValue<int>(),
+                    AccountNo = sheet.Text(row, "AccountNo"),
+                    AccountName = sheet.Text(row, "AccountName"),
+                    TransactionNo = sheet.Text(row, "TransactionNo"),
+                    Debit = sheet.Value<decimal>(row, "Debit"),
+                    Credit = sheet.Value<decimal>(row, "Credit"),
+                    JournalVoucherHeaderId = sheet.Value<int>(row, "JVHeaderId", "JournalVoucherHeaderId"),
+                    OriginalDocumentId = sheet.Value<int>(row, "OriginalDocumentId"),
                 });
             }
 
@@ -403,6 +419,7 @@ namespace Accounting_System.Repository
             return new FindJournalVoucherDetailsInDbContextDto
             {
                 ExistingJournalVoucherDetail = await _dbContext.JournalVoucherDetails
+                    .Include(x => x.JournalVoucherHeader)
                     .Where(x => x.OriginalDocumentId.HasValue && originalDocumentId.Contains(x.OriginalDocumentId!.Value))
                     .GroupBy(x => x.OriginalDocumentId!.Value)
                     .Select(x => x.First())
@@ -426,6 +443,7 @@ namespace Accounting_System.Repository
             return new FindJournalVoucherDetailsInDbContextDto
             {
                 ExistingJournalVoucherDetail = await _aasDbContext.JournalVoucherDetails
+                    .Include(x => x.JournalVoucherHeader)
                     .Where(x => x.OriginalDocumentId.HasValue && originalDocumentId.Contains(x.OriginalDocumentId!.Value))
                     .GroupBy(x => x.OriginalDocumentId!.Value)
                     .Select(x => x.First())
@@ -489,6 +507,11 @@ namespace Accounting_System.Repository
             _generalRepo.Compare(changes, logs, "OriginalDocumentId",
                 entity.OriginalDocumentId?.ToString() ?? "null",
                 row.OriginalDocumentId.ToString());
+
+            _generalRepo.Compare(changes, logs, "JournalVoucherHeaderId",
+                (entity.JournalVoucherHeader?.OriginalDocumentId ?? 0).ToString(), row.JournalVoucherHeaderId.ToString());
+            _generalRepo.Compare(changes, logs, "TransactionNo",
+                StringHelper.NormalizeString(entity.JournalVoucherHeader?.OriginalSeriesNumber ?? entity.TransactionNo), StringHelper.NormalizeString(row.TransactionNo));
 
             return changes;
         }

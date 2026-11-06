@@ -55,13 +55,16 @@
                 <th>
                     @Html.DisplayNameFor(model => model.UploadedBy)
                 </th>
+                <th>
+                    SYSTEM
+                </th>
                 <th></th>
             </tr>
             </thead>
             <tbody>
             @foreach (var item in Model)
             {
-                <tr class="align-text-bottom">
+                <tr class="align-text-bottom" data-database="@item.DatabaseName" data-document="@item.DocumentRecordId" data-number="@item.DocumentNo" data-stamp="@item.TimeStamp.Ticks">
                     <td class="document-id">
                         @Html.DisplayFor(model => item.Id)
                     </td>
@@ -90,6 +93,9 @@
                         @Html.DisplayFor(model => item.UploadedBy)
                     </td>
                     <td>
+                        @Html.DisplayFor(model => item.DatabaseName)
+                    </td>
+                    <td>
                         <a class="btn btn-primary form-control buttons action">Action</a>
                     </td>
                 </tr>
@@ -107,22 +113,38 @@
                 const tableName = tr.querySelector('.table-name').textContent.trim();
                 const columnName = tr.querySelector('.column-name').textContent.trim();
 
+                const prefix = columnName.startsWith('CheckVoucherTradePayments.') ? 'CheckVoucherTradePayments.' :
+                    columnName.startsWith('MultipleCheckVoucherPayments.') ? 'MultipleCheckVoucherPayments.' : null;
+                const paymentGroup = ['IBS-RCD', 'AAS'].includes(tr.dataset.database) && prefix !== null;
+                let reviewText = tr.dataset.database + ' — ' + tableName + ' / ' + columnName + ': ' +
+                    tr.cells[5].textContent.trim() + ' → ' + tr.cells[6].textContent.trim() +
+                    '. Modify applies this value; Keep preserves the current value.';
+                if (paymentGroup) {
+                    const related = [...document.querySelectorAll('tr[data-stamp]')].filter(row =>
+                        row.dataset.database === tr.dataset.database && row.dataset.document === tr.dataset.document &&
+                        row.dataset.number === tr.dataset.number && row.dataset.stamp === tr.dataset.stamp &&
+                        row.querySelector('.table-name').textContent.trim() === tableName &&
+                        row.querySelector('.column-name').textContent.trim().startsWith(prefix));
+                    reviewText = tr.dataset.database + ' — These related payment fields are reviewed together: ' + related.map(row =>
+                        row.cells[4].textContent.trim() + ': ' + row.cells[5].textContent.trim() + ' → ' + row.cells[6].textContent.trim()).join('; ');
+                }
+
                 Swal.fire({
                     title: 'Choose an action',
-                    text: "Are you sure to Modify or Keep the changes?",
+                    text: reviewText,
                     icon: 'question',
                     showCancelButton: true,
                     showDenyButton: true,
-                    confirmButtonText: 'Modify',
-                    denyButtonText: 'Keep',
+                    confirmButtonText: paymentGroup ? 'Modify payment group' : 'Modify',
+                    denyButtonText: paymentGroup ? 'Keep payment group' : 'Keep',
                     cancelButtonText: 'Cancel'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         
-                        window.location.href = `@Url.Action("ImportAction", "ImportExportLogs")?id=${recordId}&procedure=Modify&tableName=${tableName}&columnName=${columnName}`;
+                        window.location.href = '@Url.Action("ImportAction", "ImportExportLogs")?' + new URLSearchParams({ id: recordId, procedure: 'Modify' });
                     } else if (result.isDenied) {
                         
-                        window.location.href = `@Url.Action("ImportAction", "ImportExportLogs")?id=${recordId}&procedure=Keep&tableName=${tableName}&columnName=${columnName}`;
+                        window.location.href = '@Url.Action("ImportAction", "ImportExportLogs")?' + new URLSearchParams({ id: recordId, procedure: 'Keep' });
                     }
                     // No action needed if "Cancel" is clicked.
                 });

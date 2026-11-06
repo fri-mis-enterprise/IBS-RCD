@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Globalization;
 using Accounting_System.Data;
 using Accounting_System.Models;
@@ -632,7 +632,7 @@ namespace Accounting_System.Controllers
                 // Retrieve the selected records from the database
                 var selectedList = await _dbContext.ReceivingReports
                     .Where(rr => recordIds.Contains(rr.ReceivingReportId))
-                    .Include(rr => rr.PurchaseOrder)
+                    .Include(rr => rr.PurchaseOrder).ThenInclude(po => po!.Supplier)
                     .OrderBy(rr => rr.ReceivingReportNo)
                     .ToListAsync(cancellationToken: cancellationToken);
 
@@ -728,23 +728,23 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[row, 11].Value = item.Remarks;
                     worksheet.Cells[row, 12].Value = item.AmountPaid;
                     worksheet.Cells[row, 13].Value = item.IsPaid;
-                    worksheet.Cells[row, 14].Value = item.PaidDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 14].Value = item.PaidDate.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 15].Value = item.CanceledQuantity;
                     worksheet.Cells[row, 16].Value = item.CreatedBy;
-                    worksheet.Cells[row, 17].Value = item.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 17].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 18].Value = item.CancellationRemarks;
                     worksheet.Cells[row, 19].Value = item.ReceivedDate?.ToString("yyyy-MM-dd");
                     worksheet.Cells[row, 20].Value = item.POId;
                     worksheet.Cells[row, 21].Value = item.ReceivingReportNo;
                     worksheet.Cells[row, 22].Value = item.ReceivingReportId;
                     worksheet.Cells[row, 23].Value = item.PostedBy;
-                    worksheet.Cells[row, 24].Value = item.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 24].Value = item.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 25].Value = item.EditedBy;
-                    worksheet.Cells[row, 26].Value = item.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 26].Value = item.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 27].Value = item.CanceledBy;
-                    worksheet.Cells[row, 28].Value = item.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 28].Value = item.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 29].Value = item.VoidedBy;
-                    worksheet.Cells[row, 30].Value = item.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 30].Value = item.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     row++;
                 }
@@ -783,13 +783,13 @@ namespace Accounting_System.Controllers
                     worksheet2.Cells[poRow, 17].Value = item.PurchaseOrder.SupplierId;
                     worksheet2.Cells[poRow, 18].Value = item.PurchaseOrder.PurchaseOrderId;
                     worksheet2.Cells[poRow, 19].Value = item.PurchaseOrder.PostedBy;
-                    worksheet2.Cells[poRow, 20].Value = item.PurchaseOrder.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet2.Cells[poRow, 20].Value = item.PurchaseOrder.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet2.Cells[poRow, 21].Value = item.PurchaseOrder.EditedBy;
-                    worksheet2.Cells[poRow, 22].Value = item.PurchaseOrder.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet2.Cells[poRow, 22].Value = item.PurchaseOrder.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet2.Cells[poRow, 23].Value = item.PurchaseOrder.CanceledBy;
-                    worksheet2.Cells[poRow, 24].Value = item.PurchaseOrder.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet2.Cells[poRow, 24].Value = item.PurchaseOrder.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet2.Cells[poRow, 25].Value = item.PurchaseOrder.VoidedBy;
-                    worksheet2.Cells[poRow, 26].Value = item.PurchaseOrder.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet2.Cells[poRow, 26].Value = item.PurchaseOrder.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     poRow++;
                 }
@@ -797,6 +797,22 @@ namespace Accounting_System.Controllers
                 #endregion -- Purchase Order Export --
 
                 // Convert the Excel package to a byte array
+                worksheet.InsertColumn(10, 3);
+                worksheet.Cells[1, 10].Value = "Net of Vat";
+                worksheet.Cells[1, 11].Value = "Vat";
+                worksheet.Cells[1, 12].Value = "WHT";
+                worksheet.Cells[1, 34].Value = "Supplier Name";
+                for (var index = 0; index < selectedList.Count; index++)
+                {
+                    var report = selectedList[index];
+                    var supplier = report.PurchaseOrder?.Supplier;
+                    var net = supplier?.VatType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(report.Amount) : report.Amount;
+                    worksheet.Cells[index + 2, 10].Value = net;
+                    worksheet.Cells[index + 2, 11].Value = report.Amount - net;
+                    worksheet.Cells[index + 2, 12].Value = supplier?.TaxType == CS.TaxType_WithTax ? net * (supplier.WithholdingTaxPercent ?? 0) / 100m : 0m;
+                    worksheet.Cells[index + 2, 34].Value = supplier?.SupplierName;
+                }
+
                 var excelBytes = await package.GetAsByteArrayAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -818,183 +834,7 @@ namespace Accounting_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Import(IFormFile file, CancellationToken cancellationToken)
         {
-            if (file.Length == 0)
-            {
-                TempData["error"] = "The Excel file length is zero!.";
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-            }
-
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-            var timer = Stopwatch.StartNew();
-            try
-            {
-                await using var stream = file.OpenReadStream();
-                using var package = new ExcelPackage(stream);
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "ReceivingReport");
-
-                var worksheet2 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "PurchaseOrder");
-
-                if (worksheet == null)
-                {
-                    TempData["error"] = "The Excel file contains no worksheets.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-                }
-                if (worksheet.ToString() != nameof(DynamicView.ReceivingReport))
-                {
-                    TempData["error"] = "The Excel file is not related to receiving report.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-                }
-
-                if (worksheet2 != null)
-                {
-                    var rows = _purchaseOrderRepo.ParseWorksheet(worksheet2);
-                    var lookup = await _purchaseOrderRepo.BuildLookupPurchaseOrderContextAsync(rows, cancellationToken);
-
-                    var purchaseOrders = new List<PurchaseOrder>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingPurchaseOrder.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            purchaseOrders.Add(_purchaseOrderRepo.MapToPurchaseOrderEntity(row, lookup));
-                            auditTrails.AddRange(_purchaseOrderRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _purchaseOrderRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _purchaseOrderRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                    existing.PurchaseOrderNo,
-                                    "IBS-RCD");
-                            }
-                        }
-                    }
-
-                    _dbContext.PurchaseOrders.AddRange(purchaseOrders);
-                    _dbContext.AuditTrails.AddRange(auditTrails);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                if (worksheet != null)
-                {
-                    var rows = _receivingReportRepo.ParseWorksheet(worksheet);
-                    var lookup = await _receivingReportRepo.BuildLookupReceivingReportContextAsync(rows, cancellationToken);
-
-                    var receivingReports = new List<ReceivingReport>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        var hasReceivingReport = lookup.ExistingReceivingReport.TryGetValue(row.OriginalSeriesNumber, out var existing);
-                        if (!hasReceivingReport)
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            existing = _receivingReportRepo.MapToReceivingReportEntity(row, lookup);
-                            receivingReports.Add(existing);
-                            auditTrails.AddRange(_receivingReportRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _receivingReportRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _receivingReportRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                    existing.ReceivingReportNo,
-                                    "IBS-RCD");
-                            }
-                        }
-                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && row.ReceivedDate != default && !hasReceivingReport)
-                        {
-                            existing.IsPosted = true;
-                            existing.PostedBy = row.PostedBy;
-                            existing.PostedDate = row.PostedDate;
-
-                            if (existing.PurchaseOrder == null)
-                            {
-                                existing.PurchaseOrder = await _receivingReportRepo.GetPurchaseOrderAsync(existing.POId.Value, cancellationToken);
-                            }
-
-                            await _receivingReportRepo.PostAsync(existing, User, cancellationToken);
-                        }
-
-                        var existingInventory = await _dbContext.Inventories
-                            .Include(i => i.Product)
-                            .FirstOrDefaultAsync(i => i.Reference == row.ReceivingReportNo, cancellationToken: cancellationToken);
-                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && existingInventory != null && !hasReceivingReport)
-                        {
-                            if (existing.IsPosted)
-                            {
-                                existing.IsPosted = false;
-                            }
-
-                            existing.IsVoided = true;
-                            existing.VoidedBy = row.VoidedBy;
-                            existing.VoidedDate = row.VoidedDate;
-
-                            await _generalRepo.RemoveRecords<PurchaseJournalBook>(pb => pb.DocumentNo == row.ReceivingReportNo, cancellationToken);
-                            await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == row.ReceivingReportNo, cancellationToken);
-                            await _inventoryRepo.VoidInventory(existingInventory, cancellationToken);
-                            await _receivingReportRepo.RemoveQuantityReceived(existing.POId, existing.QuantityReceived, cancellationToken);
-                            existing.QuantityReceived = 0;
-                        }
-                    }
-
-                    _dbContext.ReceivingReports.AddRange(receivingReports);
-                    _dbContext.AuditTrails.AddRange(auditTrails);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                var checkChangesOfRecord = await _dbContext.ImportExportLogs
-                    .Where(iel => iel.Action == string.Empty).ToListAsync(cancellationToken);
-                if (checkChangesOfRecord.Any())
-                {
-                    TempData["importChanges"] = "";
-                }
-
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch (OperationCanceledException oce)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = oce.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-            }
-            catch (InvalidOperationException ioe)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["warning"] = ioe.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = ex.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-            }
-
-            TempData["success"] = $"Uploading Success!{timer.Elapsed}";
-            return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
+            return await WorkbookImport.RunAsync(this, file, "ReceivingReport", cancellationToken);
         }
 
         #endregion
@@ -1003,156 +843,8 @@ namespace Accounting_System.Controllers
         #region -- import xlsx record to AAS --
 
         [HttpPost]
-        public async Task<IActionResult> AasImport(IFormFile file, CancellationToken cancellationToken)
-        {
-            if (file.Length == 0)
-            {
-                TempData["error"] = "The Excel file length is zero!.";
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-            }
-
-            await using var transaction = await _aasDbContext.Database.BeginTransactionAsync(cancellationToken);
-
-            try
-            {
-                await using var stream = file.OpenReadStream();
-                using var package = new ExcelPackage(stream);
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "ReceivingReport");
-                var worksheet2 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "PurchaseOrder");
-
-                if (worksheet == null)
-                {
-                    TempData["error"] = "The Excel file contains no worksheets.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-                }
-                if (worksheet.ToString() != nameof(DynamicView.ReceivingReport))
-                {
-                    TempData["error"] = "The Excel file is not related to receiving report.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-                }
-
-                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-
-                #region -- Purchase Order
-
-                if (worksheet2 != null)
-                {
-                    var rows = _purchaseOrderRepo.ParseWorksheet(worksheet2);
-                    var lookup = await _purchaseOrderRepo.BuildLookupPurchaseOrderContextForAasAsync(rows, cancellationToken);
-
-                    var purchaseOrders = new List<PurchaseOrder>();
-                    var auditTrails = new List<AuditTrail>();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingPurchaseOrder.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            purchaseOrders.Add(_purchaseOrderRepo.MapToPurchaseOrderEntity(row, lookup));
-                            auditTrails.AddRange(_purchaseOrderRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _purchaseOrderRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _purchaseOrderRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                    existing.PurchaseOrderNo,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.PurchaseOrders.AddRange(purchaseOrders);
-                    _aasDbContext.AuditTrails.AddRange(auditTrails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion
-
-                #region -- Receiving Report
-
-                var rrRows = _receivingReportRepo.ParseWorksheet(worksheet);
-                var rrLookup = await _receivingReportRepo.BuildLookupReceivingReportContextForAasAsync(rrRows, cancellationToken);
-
-                var receivingReports = new List<ReceivingReport>();
-                var rrAuditTrails = new List<AuditTrail>();
-                var rrCheckingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                foreach (var row in rrRows)
-                {
-                    if (!rrLookup.ExistingReceivingReport.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                    {
-                        if (!rrCheckingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                        {
-                            continue;
-                        }
-
-                        receivingReports.Add(_receivingReportRepo.MapToReceivingReportEntity(row, rrLookup));
-                        rrAuditTrails.AddRange(_receivingReportRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                    }
-                    else
-                    {
-                        var changes = _receivingReportRepo.Detect(existing, row, rrLookup.ExistingLogs);
-                        if (changes.Any())
-                        {
-                            await _receivingReportRepo.LogChangesAsync(
-                                existing.OriginalDocumentId,
-                                changes,
-                                await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                existing.ReceivingReportNo,
-                                "AAS");
-                        }
-                    }
-                }
-
-                _aasDbContext.ReceivingReports.AddRange(receivingReports);
-                _aasDbContext.AuditTrails.AddRange(rrAuditTrails);
-                await _aasDbContext.SaveChangesAsync(cancellationToken);
-                await _dbContext.SaveChangesAsync(cancellationToken);
-
-                #endregion
-
-                var checkChangesOfRecord = await _dbContext.ImportExportLogs
-                    .Where(iel => iel.Action == string.Empty).ToListAsync(cancellationToken);
-                if (checkChangesOfRecord.Any())
-                {
-                    TempData["importChanges"] = "";
-                }
-
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch (OperationCanceledException oce)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = oce.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-            }
-            catch (InvalidOperationException ioe)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["warning"] = ioe.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = ex.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-            }
-
-            TempData["success"] = "Uploading Success!";
-            return RedirectToAction(nameof(Index), new { view = DynamicView.ReceivingReport });
-        }
+        public Task<IActionResult> AasImport(IFormFile file, CancellationToken cancellationToken)
+            => WorkbookImport.RunAsync(this, file, "ReceivingReport", cancellationToken, aas: true);
         #endregion
     }
 }

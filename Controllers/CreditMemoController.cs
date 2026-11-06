@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Accounting_System.Data;
 using Accounting_System.Models;
 using Accounting_System.Models.AccountsReceivable;
@@ -1266,20 +1266,20 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[row, 11].Value = item.UnearnedAmount;
                     worksheet.Cells[row, 12].Value = item.ServicesId;
                     worksheet.Cells[row, 13].Value = item.CreatedBy;
-                    worksheet.Cells[row, 14].Value = item.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 14].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 15].Value = item.CancellationRemarks;
                     worksheet.Cells[row, 16].Value = item.SalesInvoiceId;
                     worksheet.Cells[row, 17].Value = item.CreditMemoNo;
                     worksheet.Cells[row, 18].Value = item.ServiceInvoiceId;
                     worksheet.Cells[row, 19].Value = item.CreditMemoId;
                     worksheet.Cells[row, 20].Value = item.PostedBy;
-                    worksheet.Cells[row, 21].Value = item.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 21].Value = item.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 22].Value = item.EditedBy;
-                    worksheet.Cells[row, 23].Value = item.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 23].Value = item.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 24].Value = item.CanceledBy;
-                    worksheet.Cells[row, 25].Value = item.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 25].Value = item.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 26].Value = item.VoidedBy;
-                    worksheet.Cells[row, 27].Value = item.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet.Cells[row, 27].Value = item.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     row++;
                 }
@@ -1310,20 +1310,20 @@ namespace Accounting_System.Controllers
                     worksheet2.Cells[siRow, 12].Value = item.SalesInvoice.IsTaxAndVatPaid;
                     worksheet2.Cells[siRow, 13].Value = item.SalesInvoice.DueDate.ToString("yyyy-MM-dd");
                     worksheet2.Cells[siRow, 14].Value = item.SalesInvoice.CreatedBy;
-                    worksheet2.Cells[siRow, 15].Value = item.SalesInvoice.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet2.Cells[siRow, 15].Value = item.SalesInvoice.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet2.Cells[siRow, 16].Value = item.SalesInvoice.CancellationRemarks;
                     worksheet2.Cells[siRow, 18].Value = item.SalesInvoice.CustomerId;
                     worksheet2.Cells[siRow, 20].Value = item.SalesInvoice.ProductId;
                     worksheet2.Cells[siRow, 21].Value = item.SalesInvoice.SalesInvoiceNo;
                     worksheet2.Cells[siRow, 22].Value = item.SalesInvoice.SalesInvoiceId;
                     worksheet2.Cells[siRow, 23].Value = item.SalesInvoice.PostedBy;
-                    worksheet2.Cells[siRow, 24].Value = item.SalesInvoice.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet2.Cells[siRow, 24].Value = item.SalesInvoice.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet2.Cells[siRow, 25].Value = item.SalesInvoice.EditedBy;
-                    worksheet2.Cells[siRow, 26].Value = item.SalesInvoice.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet2.Cells[siRow, 26].Value = item.SalesInvoice.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet2.Cells[siRow, 27].Value = item.SalesInvoice.CanceledBy;
-                    worksheet2.Cells[siRow, 28].Value = item.SalesInvoice.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet2.Cells[siRow, 28].Value = item.SalesInvoice.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet2.Cells[siRow, 29].Value = item.SalesInvoice.VoidedBy;
-                    worksheet2.Cells[siRow, 30].Value = item.SalesInvoice.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet2.Cells[siRow, 30].Value = item.SalesInvoice.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     siRow++;
                 }
@@ -1353,20 +1353,20 @@ namespace Accounting_System.Controllers
                     worksheet3.Cells[svRow, 11].Value = item.ServiceInvoice.Instructions;
                     worksheet3.Cells[svRow, 12].Value = item.ServiceInvoice.IsPaid;
                     worksheet3.Cells[svRow, 13].Value = item.ServiceInvoice.CreatedBy;
-                    worksheet3.Cells[svRow, 14].Value = item.ServiceInvoice.CreatedDate.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[svRow, 14].Value = item.ServiceInvoice.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[svRow, 15].Value = item.ServiceInvoice.CancellationRemarks;
                     worksheet3.Cells[svRow, 16].Value = item.ServiceInvoice.CustomerId;
                     worksheet3.Cells[svRow, 17].Value = item.ServiceInvoice.ServiceInvoiceNo;
                     worksheet3.Cells[svRow, 18].Value = item.ServiceInvoice.ServicesId;
                     worksheet3.Cells[svRow, 19].Value = item.ServiceInvoice.ServiceInvoiceId;
                     worksheet3.Cells[svRow, 20].Value = item.ServiceInvoice.PostedBy;
-                    worksheet3.Cells[svRow, 21].Value = item.ServiceInvoice.PostedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[svRow, 21].Value = item.ServiceInvoice.PostedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[svRow, 22].Value = item.ServiceInvoice.EditedBy;
-                    worksheet3.Cells[svRow, 23].Value = item.ServiceInvoice.EditedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[svRow, 23].Value = item.ServiceInvoice.EditedDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[svRow, 24].Value = item.ServiceInvoice.CanceledBy;
-                    worksheet3.Cells[svRow, 25].Value = item.ServiceInvoice.CanceledDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[svRow, 25].Value = item.ServiceInvoice.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[svRow, 26].Value = item.ServiceInvoice.VoidedBy;
-                    worksheet3.Cells[svRow, 27].Value = item.ServiceInvoice.VoidedDate?.ToString("yyyy-MM-dd hh:mm:ss.ffffff");
+                    worksheet3.Cells[svRow, 27].Value = item.ServiceInvoice.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
                     svRow++;
                 }
@@ -1396,231 +1396,7 @@ namespace Accounting_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Import(IFormFile file, CancellationToken cancellationToken)
         {
-            if (file.Length == 0)
-            {
-                TempData["error"] = "The Excel file length is zero!.";
-                return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-            }
-
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-
-            try
-            {
-                await using var stream = file.OpenReadStream();
-                using var package = new ExcelPackage(stream);
-
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "CreditMemo");
-
-                var worksheet2 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "SalesInvoice");
-
-                var worksheet3 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "ServiceInvoice");
-
-                if (worksheet == null)
-                {
-                    TempData["error"] = "The Excel file contains no worksheets.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-                }
-
-                if (worksheet.ToString() != nameof(DynamicView.CreditMemo))
-                {
-                    TempData["error"] = "The Excel file is not related to credit memo.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-                }
-
-                if (worksheet2 != null)
-                {
-                    var rows = _salesInvoiceRepo.ParseWorksheet(worksheet2);
-                    var lookup = await _salesInvoiceRepo.BuildLookupSalesInvoiceContextAsync(rows, cancellationToken);
-
-                    var salesInvoices = new List<SalesInvoice>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            salesInvoices.Add(_salesInvoiceRepo.MapToSalesInvoiceEntity(row, lookup));
-                            auditTrails.AddRange(_salesInvoiceRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _salesInvoiceRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _salesInvoiceRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                    existing.SalesInvoiceNo,
-                                    "IBS-RCD");
-                            }
-                        }
-                    }
-
-                    _dbContext.SalesInvoices.AddRange(salesInvoices);
-                    _dbContext.AuditTrails.AddRange(auditTrails);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                if (worksheet3 != null)
-                {
-                    var rows = _serviceInvoiceRepo.ParseWorksheet(worksheet3);
-                    var lookup = await _serviceInvoiceRepo.BuildLookupServiceInvoiceContextAsync(rows, cancellationToken);
-
-                    var serviceInvoices = new List<ServiceInvoice>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            serviceInvoices.Add(_serviceInvoiceRepo.MapToServiceInvoiceEntity(row, lookup));
-                            auditTrails.AddRange(_serviceInvoiceRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _serviceInvoiceRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _serviceInvoiceRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                    existing.ServiceInvoiceNo,
-                                    "IBS-RCD");
-                            }
-                        }
-                    }
-
-                    _dbContext.ServiceInvoices.AddRange(serviceInvoices);
-                    _dbContext.AuditTrails.AddRange(auditTrails);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                if (worksheet != null)
-                {
-                    var rows = _creditMemoRepo.ParseWorksheet(worksheet);
-                    var lookup = await _creditMemoRepo.BuildLookupCreditMemoContextAsync(rows, cancellationToken);
-
-                    var creditMemos = new List<CreditMemo>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        var hasCreditMemo = lookup.ExistingCreditMemo.TryGetValue(row.OriginalSeriesNumber, out var existing);
-                        if (!hasCreditMemo)
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            existing = _creditMemoRepo.MapToCreditMemoEntity(row, lookup);
-                            creditMemos.Add(existing);
-                            auditTrails.AddRange(_creditMemoRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _creditMemoRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _creditMemoRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                    existing.CreditMemoNo,
-                                    "IBS-RCD");
-                            }
-                        }
-                        if (!string.IsNullOrWhiteSpace(row.PostedBy) && row.PostedDate != default && !hasCreditMemo)
-                        {
-                            existing.IsPosted = true;
-                            existing.PostedBy = row.PostedBy;
-                            existing.PostedDate = row.PostedDate;
-
-                            await _creditMemoRepo.SalesBookPosting(row, cancellationToken);
-                            await _creditMemoRepo.GeneralLedgerBookPosting(row, cancellationToken);
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(row.VoidedBy) && row.VoidedDate != default && !hasCreditMemo)
-                        {
-                            if (existing.IsPosted)
-                            {
-                                existing.IsPosted = false;
-                            }
-
-                            existing.IsVoided = true;
-                            existing.VoidedBy = row.VoidedBy;
-                            existing.VoidedDate = row.VoidedDate;
-
-                            await _dbContext.SaveChangesAsync(cancellationToken);
-
-                            var findSalesBook = await _dbContext.SalesBooks.AnyAsync(sb => sb.SerialNo == row.CreditMemoNo, cancellationToken);
-                            var findGeneralLedgerBook = await _dbContext.GeneralLedgerBooks.AnyAsync(gl => gl.Reference == row.CreditMemoNo, cancellationToken);
-
-                            if (findSalesBook)
-                            {
-                                await _generalRepo.RemoveRecords<SalesBook>(sb => sb.SerialNo == row.CreditMemoNo, cancellationToken);
-                            }
-
-                            if (findGeneralLedgerBook)
-                            {
-                                await _generalRepo.RemoveRecords<GeneralLedgerBook>(gl => gl.Reference == row.CreditMemoNo, cancellationToken);
-                            }
-                        }
-                    }
-
-                    _dbContext.CreditMemos.AddRange(creditMemos);
-                    _dbContext.AuditTrails.AddRange(auditTrails);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                var checkChangesOfRecord = await _dbContext.ImportExportLogs
-                    .Where(iel => iel.Action == string.Empty).ToListAsync(cancellationToken);
-                if (checkChangesOfRecord.Any())
-                {
-                    TempData["importChanges"] = "";
-                }
-
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch (OperationCanceledException oce)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = oce.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-            }
-            catch (InvalidOperationException ioe)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["warning"] = ioe.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = ex.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-            }
-
-            TempData["success"] = "Uploading Success!";
-            return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
+            return await WorkbookImport.RunAsync(this, file, "CreditMemo", cancellationToken);
         }
 
         #endregion
@@ -1629,211 +1405,8 @@ namespace Accounting_System.Controllers
         #region -- import xlsx record --
 
         [HttpPost]
-        public async Task<IActionResult> AasImport(IFormFile file, CancellationToken cancellationToken)
-        {
-            if (file.Length == 0)
-            {
-                TempData["error"] = "The Excel file length is zero!.";
-                return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-            }
-
-            await using var transaction = await _aasDbContext.Database.BeginTransactionAsync(cancellationToken);
-
-            try
-            {
-                await using var stream = file.OpenReadStream();
-                using var package = new ExcelPackage(stream);
-
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "CreditMemo");
-
-                var worksheet2 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "SalesInvoice");
-
-                var worksheet3 = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "ServiceInvoice");
-
-                if (worksheet == null)
-                {
-                    TempData["error"] = "The Excel file contains no worksheets.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-                }
-
-                if (worksheet.ToString() != nameof(DynamicView.CreditMemo))
-                {
-                    TempData["error"] = "The Excel file is not related to credit memo.";
-                    return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-                }
-
-                #region -- Sales Invoice
-
-                if (worksheet2 != null)
-                {
-                    var rows = _salesInvoiceRepo.ParseWorksheet(worksheet2);
-                    var lookup = await _salesInvoiceRepo.BuildLookupSalesInvoiceContextForAasAsync(rows, cancellationToken);
-
-                    var salesInvoices = new List<SalesInvoice>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            salesInvoices.Add(_salesInvoiceRepo.MapToSalesInvoiceEntity(row, lookup));
-                            auditTrails.AddRange(_salesInvoiceRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _salesInvoiceRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _salesInvoiceRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                    existing.SalesInvoiceNo,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.SalesInvoices.AddRange(salesInvoices);
-                    _aasDbContext.AuditTrails.AddRange(auditTrails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion
-
-                #region -- Service Invoice
-
-                if (worksheet3 != null)
-                {
-                    var rows = _serviceInvoiceRepo.ParseWorksheet(worksheet3);
-                    var lookup = await _serviceInvoiceRepo.BuildLookupServiceInvoiceContextForAasAsync(rows, cancellationToken);
-
-                    var serviceInvoices = new List<ServiceInvoice>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            serviceInvoices.Add(_serviceInvoiceRepo.MapToServiceInvoiceEntity(row, lookup));
-                            auditTrails.AddRange(_serviceInvoiceRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _serviceInvoiceRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _serviceInvoiceRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                    existing.ServiceInvoiceNo,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.ServiceInvoices.AddRange(serviceInvoices);
-                    _aasDbContext.AuditTrails.AddRange(auditTrails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion
-
-                #region -- Credit Memo
-
-                if (worksheet != null)
-                {
-                    var rows = _creditMemoRepo.ParseWorksheet(worksheet);
-                    var lookup = await _creditMemoRepo.BuildLookupCreditMemoContextAsync(rows, cancellationToken);
-
-                    var creditMemos = new List<CreditMemo>();
-                    var auditTrails = new List<AuditTrail>();
-                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                    var checkingDuplicateSeriesNo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var row in rows)
-                    {
-                        if (!lookup.ExistingCreditMemo.TryGetValue(row.OriginalSeriesNumber, out var existing))
-                        {
-                            if (!checkingDuplicateSeriesNo.Add(row.OriginalSeriesNumber))
-                            {
-                                continue;
-                            }
-
-                            creditMemos.Add(_creditMemoRepo.MapToCreditMemoEntity(row, lookup));
-                            auditTrails.AddRange(_creditMemoRepo.AuditTrails(row, ipAddress ?? string.Empty));
-                        }
-                        else
-                        {
-                            var changes = _creditMemoRepo.Detect(existing, row, lookup.ExistingLogs);
-                            if (changes.Any())
-                            {
-                                await _creditMemoRepo.LogChangesAsync(
-                                    existing.OriginalDocumentId,
-                                    changes,
-                                    await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!),
-                                    existing.CreditMemoNo,
-                                    "AAS");
-                            }
-                        }
-                    }
-
-                    _aasDbContext.CreditMemos.AddRange(creditMemos);
-                    _aasDbContext.AuditTrails.AddRange(auditTrails);
-                    await _aasDbContext.SaveChangesAsync(cancellationToken);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                #endregion
-
-                var checkChangesOfRecord = await _dbContext.ImportExportLogs
-                    .Where(iel => iel.Action == string.Empty).ToListAsync(cancellationToken);
-                if (checkChangesOfRecord.Any())
-                {
-                    TempData["importChanges"] = "";
-                }
-
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch (OperationCanceledException oce)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = oce.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-            }
-            catch (InvalidOperationException ioe)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["warning"] = ioe.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                TempData["error"] = ex.Message;
-                return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-            }
-
-            TempData["success"] = "Uploading Success!";
-            return RedirectToAction(nameof(Index), new { view = DynamicView.CreditMemo });
-        }
+        public Task<IActionResult> AasImport(IFormFile file, CancellationToken cancellationToken)
+            => WorkbookImport.RunAsync(this, file, "CreditMemo", cancellationToken, aas: true);
 
         #endregion -- import xlsx record --
     }
