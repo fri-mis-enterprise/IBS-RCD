@@ -643,19 +643,19 @@ namespace Accounting_System.Repository
                         ? null
                         : sheet.Text(row, "CheckBranch"),
                     CheckAmount = sheet.Value<decimal>(row, "CheckAmount"),
-                    ManagerCheckDate = string.IsNullOrWhiteSpace(sheet.Text(row, "ManagerCheckDate"))
+                    ManagerCheckDate = string.IsNullOrWhiteSpace(sheet.Text(row, "ManagerCheckDate", "ManagersCheckDate"))
                         ? null
-                        : DateOnly.FromDateTime(sheet.Date(row, "ManagerCheckDate")),
-                    ManagerCheckNo = string.IsNullOrWhiteSpace(sheet.Text(row, "ManagerCheckNo"))
+                        : DateOnly.FromDateTime(sheet.Date(row, "ManagerCheckDate", false, "ManagersCheckDate")),
+                    ManagerCheckNo = string.IsNullOrWhiteSpace(sheet.Text(row, "ManagerCheckNo", "ManagersCheckNo"))
                         ? null
-                        : sheet.Text(row, "ManagerCheckNo"),
-                    ManagerCheckBank = string.IsNullOrWhiteSpace(sheet.Text(row, "ManagerCheckBank"))
+                        : sheet.Text(row, "ManagerCheckNo", "ManagersCheckNo"),
+                    ManagerCheckBank = string.IsNullOrWhiteSpace(sheet.Text(row, "ManagerCheckBank", "ManagersCheckBank"))
                         ? null
-                        : sheet.Text(row, "ManagerCheckBank"),
-                    ManagerCheckBranch = string.IsNullOrWhiteSpace(sheet.Text(row, "ManagerCheckBranch"))
+                        : sheet.Text(row, "ManagerCheckBank", "ManagersCheckBank"),
+                    ManagerCheckBranch = string.IsNullOrWhiteSpace(sheet.Text(row, "ManagerCheckBranch", "ManagersCheckBranch"))
                         ? null
-                        : sheet.Text(row, "ManagerCheckBranch"),
-                    ManagerCheckAmount = sheet.Value<decimal>(row, "ManagerCheckAmount"),
+                        : sheet.Text(row, "ManagerCheckBranch", "ManagersCheckBranch"),
+                    ManagerCheckAmount = sheet.Value<decimal>(row, "ManagerCheckAmount", "ManagersCheckAmount"),
                     EWT = sheet.Value<decimal>(row, "EWT"),
                     WVAT = sheet.Value<decimal>(row, "WVAT"),
                     Total = sheet.Value<decimal>(row, "Total"),

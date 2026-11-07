@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+using Accounting_System.Models.MasterFile;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Accounting_System.Models
@@ -28,7 +30,6 @@ namespace Accounting_System.Models
         [StringLength(20)]
         public string CustomerTin { get; set; }
 
-        [Required]
         [Display(Name = "Business Style")]
         [StringLength(100)]
         public string? BusinessStyle { get; set; }
@@ -68,5 +69,83 @@ namespace Accounting_System.Models
         [Display(Name = "Zip Code")]
         [StringLength(10)]
         public string ZipCode { get; set; } = String.Empty;
+
+        [Display(Name = "Customer Code")]
+        [StringLength(7)]
+        public string? CustomerCode { get; set; }
+
+        [Required]
+        [Display(Name = "Vat Type")]
+        [StringLength(10)]
+        public string VatType { get; set; } = "Vatable";
+
+        public bool IsActive { get; set; } = true;
+
+        [Display(Name = "Edited By")]
+        [StringLength(50)]
+        public string? EditedBy { get; set; }
+
+        [Display(Name = "Edited Date")]
+        [Column(TypeName = "timestamp without time zone")]
+        public DateTime? EditedDate { get; set; }
+
+        public ClusterArea? ClusterCode { get; set; }
+
+        [StringLength(3)]
+        public string? StationCode { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        [DisplayFormat(DataFormatString = "{0:#,##0.0000;(#,##0.0000)}", ApplyFormatInEditMode = false)]
+        public decimal CreditLimit { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        [DisplayFormat(DataFormatString = "{0:#,##0.0000;(#,##0.0000)}", ApplyFormatInEditMode = false)]
+        public decimal CreditLimitAsOfToday { get; set; }
+
+        public bool HasBranch { get; set; }
+
+        public ICollection<CustomerBranch> Branches { get; set; } = new List<CustomerBranch>();
+
+        [Column(TypeName = "numeric(18,4)")]
+        [Range(typeof(decimal), "0", "1")]
+        public decimal? RetentionRate { get; set; }
+
+        public bool HasMultipleTerms { get; set; }
+
+
+        [StringLength(1024)]
+        public string? BirDocumentFilePath { get; set; }
+
+        [StringLength(200)]
+        public string? BirDocumentFileName { get; set; }
+
+        [Display(Name = "Requires Price Adjustment")]
+        public bool RequiresPriceAdjustment { get; set; }
+
+        [NotMapped]
+        public List<SelectListItem>? PaymentTerms { get; set; }
+
+        public int? CommissioneeId { get; set; }
+
+        public decimal CommissionRate { get; set; }
+
+        [NotMapped]
+        public List<SelectListItem>? Commissionees { get; set; }
+
+        public Accounting_System.Models.MasterFile.Supplier? Commissionee { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        [Range(typeof(decimal), "0", "1")]
+        public decimal CwtPercent { get; set; } = 0.01m;
+
+        [NotMapped]
+        public List<SelectListItem>? CwtPercentList { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        [Range(typeof(decimal), "0", "1")]
+        public decimal CwVatPercent { get; set; } = 0.05m;
+
+        [NotMapped]
+        public List<SelectListItem>? CwVatPercentList { get; set; }
     }
 }

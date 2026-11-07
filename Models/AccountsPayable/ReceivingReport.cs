@@ -95,5 +95,32 @@ namespace Accounting_System.Models.AccountsPayable
 
         //Ibs records
         public int? OriginalPOId { get; set; }
+
+        [StringLength(50)]
+        public string? SupplierDrNo { get; set; }
+
+        [StringLength(50)]
+        public string? WithdrawalCertificate { get; set; }
+
+        [Display(Name = "ATL No")]
+        [StringLength(100)]
+        public string? AuthorityToLoadNo { get; set; }
+
+        public int? DeliveryReceiptId { get; set; }
+
+        [StringLength(50)]
+        public string Status { get; set; } = "Pending";
+
+
+        public bool IsCostUpdated { get; set; }
+
+        [StringLength(50)]
+        public string? OldRRNo { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CostBasedOnSoa { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal TaxPercentage { get; set; }
     }
 }

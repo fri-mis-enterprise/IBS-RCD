@@ -88,5 +88,52 @@ namespace Accounting_System.Models.AccountsPayable
         public int? OriginalSupplierId { get; set; }
 
         public int? OriginalProductId { get; set; }
+
+        [StringLength(200)]
+        public string SupplierName { get; set; } = "";
+
+        [StringLength(200)]
+        public string SupplierAddress { get; set; } = "";
+
+        [StringLength(20)]
+        public string SupplierTin { get; set; } = "";
+
+        [StringLength(100)]
+        public string ProductName { get; set; } = "";
+
+        [StringLength(100)]
+        public string? SupplierSalesOrderNo { get; set; }
+
+        [StringLength(50)]
+        public string Status { get; set; } = "Pending";
+
+        public bool IsSubPo { get; set; }
+
+        [StringLength(20)]
+        public string? SubPoSeries { get; set; }
+
+        public int? CustomerId { get; set; }
+
+        [StringLength(50)]
+        [DisplayFormat(ConvertEmptyStringToNull = false)]
+        public string OldPoNo { get; set; } = "";
+
+
+        [Column(TypeName = "date")]
+        public DateOnly TriggerDate { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal UnTriggeredQuantity { get; set; }
+
+        public int PickUpPointId { get; set; }
+
+        [StringLength(10)]
+        public string VatType { get; set; } = "";
+
+        [StringLength(20)]
+        public string TaxType { get; set; } = "";
+
+        [StringLength(4)]
+        public string TypeOfPurchase { get; set; } = "";
     }
 }

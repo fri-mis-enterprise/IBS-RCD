@@ -117,7 +117,7 @@ namespace Accounting_System.Controllers
         {
             var viewModel = new ServiceInvoice
             {
-                Customers = await _dbContext.Customers
+                Customers = await _dbContext.Customers.Where(x => x.IsActive)
                     .OrderBy(c => c.CustomerId)
                     .Select(c => new SelectListItem
                     {
@@ -140,7 +140,7 @@ namespace Accounting_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(ServiceInvoice model, CancellationToken cancellationToken)
         {
-            model.Customers = await _dbContext.Customers
+            model.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                 .OrderBy(c => c.CustomerId)
                 .Select(c => new SelectListItem
                 {
@@ -193,6 +193,8 @@ namespace Accounting_System.Controllers
                     #region --Retrieval of Customer
 
                     var customer = await _serviceInvoiceRepo.FindCustomerAsync(model.CustomerId, cancellationToken);
+                    model.CwtPercent = customer.CwtPercent;
+                    model.CwVatPercent = customer.CwVatPercent;
 
                     #endregion --Retrieval of Customer
 
@@ -215,7 +217,7 @@ namespace Accounting_System.Controllers
                         model.CurrentAndPreviousAmount += model.Amount;
                     }
 
-                    if (customer.CustomerType == "Vatable")
+                    if (customer.VatType == "Vatable")
                     {
                         model.CurrentAndPreviousAmount = Math.Round(model.CurrentAndPreviousAmount / 1.12m, 2);
                         model.UnearnedAmount = Math.Round(model.UnearnedAmount / 1.12m, 2);
@@ -247,6 +249,8 @@ namespace Accounting_System.Controllers
                     }
 
                     #endregion --Audit Trail Recording
+
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
 
                     await _dbContext.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
@@ -324,7 +328,7 @@ namespace Accounting_System.Controllers
                     decimal netOfVatAmount;
                     decimal vatAmount = 0;
 
-                    if (model.Customer!.CustomerType == CS.VatType_Vatable)
+                    if (model.Customer!.VatType == CS.VatType_Vatable)
                     {
                         netOfVatAmount = _generalRepo.ComputeNetOfVat(model.Total);
                         vatAmount = _generalRepo.ComputeVatAmount(netOfVatAmount);
@@ -336,17 +340,17 @@ namespace Accounting_System.Controllers
 
                     if (model.Customer.WithHoldingTax)
                     {
-                        withHoldingTaxAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m);
+                        withHoldingTaxAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, model.CwtPercent);
                     }
 
                     if (model.Customer.WithHoldingVat)
                     {
-                        withHoldingVatAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.05m);
+                        withHoldingVatAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, model.CwVatPercent);
                     }
 
                     var sales = new SalesBook();
 
-                    if (model.Customer.CustomerType == "Vatable")
+                    if (model.Customer.VatType == "Vatable")
                     {
                         sales.TransactionDate = postedDate;
                         sales.SerialNo = model.ServiceInvoiceNo!;
@@ -364,7 +368,7 @@ namespace Accounting_System.Controllers
                         sales.DueDate = model.DueDate;
                         sales.DocumentId = model.ServiceInvoiceId;
                     }
-                    else if (model.Customer.CustomerType == "Exempt")
+                    else if (model.Customer.VatType == "Exempt")
                     {
                         sales.TransactionDate = postedDate;
                         sales.SerialNo = model.ServiceInvoiceNo!;
@@ -636,7 +640,7 @@ namespace Accounting_System.Controllers
             }
             var existingModel = await _serviceInvoiceRepo.FindSv(id, cancellationToken);
 
-            existingModel.Customers = await _dbContext.Customers
+            existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                 .OrderBy(c => c.CustomerId)
                 .Select(c => new SelectListItem
                 {
@@ -694,6 +698,8 @@ namespace Accounting_System.Controllers
 
                         #endregion --Audit Trail Recording
 
+                        await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
+
                         await _dbContext.SaveChangesAsync(cancellationToken);
                         await transaction.CommitAsync(cancellationToken);
                         TempData["success"] = "Service Invoice updated successfully";
@@ -707,7 +713,7 @@ namespace Accounting_System.Controllers
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync(cancellationToken);
-                    existingModel.Customers = await _dbContext.Customers
+                    existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                         .OrderBy(c => c.CustomerId)
                         .Select(c => new SelectListItem
                         {
@@ -728,7 +734,7 @@ namespace Accounting_System.Controllers
                 }
             }
 
-            existingModel.Customers = await _dbContext.Customers
+            existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                 .OrderBy(c => c.CustomerId)
                 .Select(c => new SelectListItem
                 {
@@ -822,6 +828,9 @@ namespace Accounting_System.Controllers
                 worksheet.Cells["Z1"].Value = "VoidedBy";
                 worksheet.Cells["AA1"].Value = "VoidedDate";
 
+                var rateColumn = worksheet.Dimension.Columns + 1;
+                worksheet.Cells[1, rateColumn].Value = "CwtPercent";
+                worksheet.Cells[1, rateColumn + 1].Value = "CwVatPercent";
                 int row = 2;
 
                 foreach (var item in selectedList)
@@ -854,10 +863,13 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[row, 26].Value = item.VoidedBy;
                     worksheet.Cells[row, 27].Value = item.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
+                    worksheet.Cells[row, rateColumn].Value = item.CwtPercent;
+                    worksheet.Cells[row, rateColumn + 1].Value = item.CwVatPercent;
                     row++;
                 }
 
                 // Convert the Excel package to a byte array
+                TransactionColumns.Export(worksheet, selectedList);
                 var excelBytes = await package.GetAsByteArrayAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"ServiceInvoiceList_IBS-RCD_{DateTime.Now:yyyyddMMHHmmss}.xlsx");

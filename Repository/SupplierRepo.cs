@@ -1,10 +1,19 @@
-﻿using Accounting_System.Data;
+using Accounting_System.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Accounting_System.Repository
 {
     public class SupplierRepo
     {
+        public async Task<string> GenerateCodeAsync(CancellationToken token)
+        {
+            var codes = await _dbContext.Suppliers.Where(s => s.SupplierCode != null)
+                .Select(s => s.SupplierCode!).ToListAsync(token);
+            var next = codes.Select(c => c.Length > 1 && int.TryParse(c.AsSpan(1), out var n) ? n : 0)
+                .DefaultIfEmpty().Max() + 1;
+            if (next > 999999) throw new InvalidOperationException("Supplier code range exhausted.");
+            return $"S{next:D6}";
+        }
         private readonly ApplicationDbContext _dbContext;
 
         public SupplierRepo(ApplicationDbContext dbContext)

@@ -1,0 +1,21 @@
+@model Accounting_System.Models.AccountsPayable.PurchaseOrder
+<div class="form-floating py-2 col-12">
+    <input asp-for="TriggerDate" type="date" class="form-control border-0 shadow" placeholder="" />
+    <label asp-for="TriggerDate">Trigger Date</label>
+    <span asp-validation-for="TriggerDate" class="text-danger"></span>
+</div>
+<div class="form-group mb-3">
+    <label asp-for="TypeOfPurchase">Type of Purchase</label>
+    <select asp-for="TypeOfPurchase" class="form-select js-select2 border-0 shadow" style="width:100%"><option value="">Select type of purchase</option><option value="Mops">MOPS</option><option value="Spot">SPOT</option></select>
+    <span asp-validation-for="TypeOfPurchase" class="text-danger"></span>
+</div>
+<div class="form-floating py-2 col-12">
+    <input asp-for="SupplierSalesOrderNo" class="form-control border-0 shadow" placeholder=""/>
+    <label asp-for="SupplierSalesOrderNo">Supplier Sales Order #</label>
+    <span asp-validation-for="SupplierSalesOrderNo" class="text-danger"></span>
+</div>
+<div class="form-floating py-2 col-12">
+    <input asp-for="OldPoNo" class="form-control border-0 shadow" placeholder=""/>
+    <label asp-for="OldPoNo">Old PO #</label>
+    <span asp-validation-for="OldPoNo" class="text-danger"></span>
+</div>

@@ -1,4 +1,4 @@
-﻿using Accounting_System.Models.AccountsPayable;
+using Accounting_System.Models.AccountsPayable;
 using Accounting_System.Models.MasterFile;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
@@ -98,5 +98,51 @@ namespace Accounting_System.Models.AccountsReceivable
         //Ibs records
         public int? OriginalCustomerId { get; set; }
         public int? OriginalProductId { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwtPercent { get; set; } = 0.01m;
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwVatPercent { get; set; } = 0.05m;
+
+        [StringLength(200)]
+        public string CustomerAddress { get; set; } = "";
+
+        [StringLength(20)]
+        public string CustomerTin { get; set; } = "";
+
+        [StringLength(20)]
+        public string PaymentStatus { get; set; } = "Pending";
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwtBalance { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwVatBalance { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwtAmountPaid { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwVatAmountPaid { get; set; }
+
+        [Display(Name = "PO No.")]
+        public int PurchaseOrderId { get; set; }
+
+
+        public int ReceivingReportId { get; set; }
+
+        public int? DeliveryReceiptId { get; set; }
+
+        public int? CustomerOrderSlipId { get; set; }
+
+        [StringLength(15)]
+        public string Terms { get; set; } = "";
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal DebitAmount { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CreditAmount { get; set; }
     }
 }

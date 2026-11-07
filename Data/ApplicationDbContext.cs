@@ -1,4 +1,4 @@
-﻿using Accounting_System.Models;
+using Accounting_System.Models;
 using Accounting_System.Models.AccountsPayable;
 using Accounting_System.Models.AccountsReceivable;
 using Accounting_System.Models.MasterFile;
@@ -21,6 +21,7 @@ namespace Accounting_System.Data
 
         public DbSet<ApplicationUser> ApplicationUsers { get; set; }
         public DbSet<SalesInvoice> SalesInvoices { get; set; }
+        public DbSet<CustomerBranch> CustomerBranches { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<ChartOfAccount> ChartOfAccounts { get; set; }
         public DbSet<Product> Products { get; set; }
@@ -61,6 +62,12 @@ namespace Accounting_System.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+            builder.Entity<Customer>().Property(c => c.IsActive).HasDefaultValue(true);
+            builder.Entity<Product>().Property(p => p.IsActive).HasDefaultValue(true);
+            builder.Entity<Supplier>().Property(s => s.IsActive).HasDefaultValue(true);
+            builder.Entity<BankAccount>().Property(b => b.IsActive).HasDefaultValue(true);
+            builder.Entity<Customer>().HasOne(c => c.Commissionee).WithMany().HasForeignKey(c => c.CommissioneeId).OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<CustomerBranch>().HasOne(b => b.Customer).WithMany(c => c.Branches).HasForeignKey(b => b.CustomerId).OnDelete(DeleteBehavior.Restrict);
 
             #region -- Implement ICollection
 
@@ -297,6 +304,7 @@ namespace Accounting_System.Data
 
         public DbSet<ApplicationUser> ApplicationUsers { get; set; }
         public DbSet<SalesInvoice> SalesInvoices { get; set; }
+        public DbSet<CustomerBranch> CustomerBranches { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<ChartOfAccount> ChartOfAccounts { get; set; }
         public DbSet<Product> Products { get; set; }
@@ -337,6 +345,8 @@ namespace Accounting_System.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+            builder.Entity<Customer>().HasOne(c => c.Commissionee).WithMany().HasForeignKey(c => c.CommissioneeId).OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<CustomerBranch>().HasOne(b => b.Customer).WithMany(c => c.Branches).HasForeignKey(b => b.CustomerId).OnDelete(DeleteBehavior.Restrict);
 
             #region -- Implement ICollection
 

@@ -56,8 +56,8 @@ namespace Accounting_System.Controllers
         {
             var viewModel = new Services
             {
-                CurrentAndPreviousTitles = await _dbContext.ChartOfAccounts
-                    .Where(coa => !coa.HasChildren)
+                CurrentAndPreviousTitles = await _dbContext.ChartOfAccounts.Where(x => !x.IsHidden)
+                    .Where(coa => !coa.HasChildren && !coa.IsHidden)
                     .OrderBy(coa => coa.AccountId)
                     .Select(s => new SelectListItem
                     {
@@ -65,8 +65,8 @@ namespace Accounting_System.Controllers
                         Text = s.AccountNumber + " " + s.AccountName
                     })
                     .ToListAsync(cancellationToken),
-                UnearnedTitles = await _dbContext.ChartOfAccounts
-                    .Where(coa => !coa.HasChildren)
+                UnearnedTitles = await _dbContext.ChartOfAccounts.Where(x => !x.IsHidden)
+                    .Where(coa => !coa.HasChildren && !coa.IsHidden)
                     .OrderBy(coa => coa.AccountId)
                     .Select(s => new SelectListItem
                     {
@@ -83,8 +83,8 @@ namespace Accounting_System.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Services services, CancellationToken cancellationToken)
         {
-            services.CurrentAndPreviousTitles = await _dbContext.ChartOfAccounts
-                .Where(coa => !coa.HasChildren)
+            services.CurrentAndPreviousTitles = await _dbContext.ChartOfAccounts.Where(x => !x.IsHidden)
+                .Where(coa => !coa.HasChildren && !coa.IsHidden)
                 .OrderBy(coa => coa.AccountId)
                 .Select(s => new SelectListItem
                 {
@@ -93,8 +93,8 @@ namespace Accounting_System.Controllers
                 })
                 .ToListAsync(cancellationToken);
 
-            services.UnearnedTitles = await _dbContext.ChartOfAccounts
-                .Where(coa => !coa.HasChildren)
+            services.UnearnedTitles = await _dbContext.ChartOfAccounts.Where(x => !x.IsHidden)
+                .Where(coa => !coa.HasChildren && !coa.IsHidden)
                 .OrderBy(coa => coa.AccountId)
                 .Select(s => new SelectListItem
                 {
@@ -121,10 +121,10 @@ namespace Accounting_System.Controllers
                         return View(services);
                     }
 
-                    var currentAndPrevious = await _dbContext.ChartOfAccounts
+                    var currentAndPrevious = await _dbContext.ChartOfAccounts.Where(x => !x.IsHidden)
                         .FirstOrDefaultAsync(x => x.AccountId == services.CurrentAndPreviousId, cancellationToken);
 
-                    var unearned = await _dbContext.ChartOfAccounts
+                    var unearned = await _dbContext.ChartOfAccounts.Where(x => !x.IsHidden)
                         .FirstOrDefaultAsync(x => x.AccountId == services.UnearnedId, cancellationToken);
 
                     services.CurrentAndPreviousNo = currentAndPrevious!.AccountNumber;

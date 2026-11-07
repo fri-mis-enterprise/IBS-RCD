@@ -1,0 +1,21 @@
+@model Accounting_System.Models.Customer
+@{ ViewData["Title"] = "Customer Branches"; }
+<h2>@Model.CustomerName — Branches</h2>
+<table class="table">
+    <thead><tr><th>Name</th><th>Address</th><th>TIN</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var branch in Model.Branches)
+    {
+        <tr><td>@branch.BranchName</td><td>@branch.BranchAddress</td><td>@branch.BranchTin</td>
+            <td><form asp-action="DeleteBranch" method="post"><input type="hidden" name="id" value="@branch.Id" /><button class="btn btn-outline-danger">Delete</button></form></td></tr>
+    }
+    </tbody>
+</table>
+<form asp-action="AddBranch" method="post">
+    <input type="hidden" name="CustomerId" value="@Model.CustomerId" />
+    <div class="mb-3"><label for="BranchName">Branch Name</label><input id="BranchName" name="BranchName" maxlength="50" required class="form-control" /></div>
+    <div class="mb-3"><label for="BranchAddress">Branch Address</label><input id="BranchAddress" name="BranchAddress" maxlength="200" required class="form-control" /></div>
+    <div class="mb-3"><label for="BranchTin">Branch TIN</label><input id="BranchTin" name="BranchTin" maxlength="50" required class="form-control" /></div>
+    <button class="btn btn-primary">Add Branch</button>
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</form>

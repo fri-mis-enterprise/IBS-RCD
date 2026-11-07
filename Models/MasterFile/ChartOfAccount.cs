@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -67,5 +67,10 @@ namespace Accounting_System.Models
 
         [NotMapped]
         public List<SelectListItem>? Accounts { get; set; }
+
+        public bool IsHidden { get; set; }
+
+        [StringLength(20)]
+        public string FinancialStatementType { get; set; } = string.Empty;
     }
 }

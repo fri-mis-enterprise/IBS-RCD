@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="~/css/form-style.css" asp-append-version="true"/>
 @model Accounting_System.Models.ViewModels.CheckVoucherNonTradePaymentViewModel
 
 @{
@@ -124,7 +125,8 @@
                     </table>
                 </div>
                 <br />
-                <div class="row pt-2">
+                <partial name="_VoucherDocumentationFields" for="Documentation" />
+            <div class="row pt-2">
                     <div class="col-6 col-md-3">
                         <button type="submit" class="btn btn-primary form-control">Save</button>
                     </div>
@@ -138,6 +140,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/voucher-documentation.js" asp-append-version="true"></script>
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
@@ -291,7 +294,7 @@
             let errorMessage = "";
             let isValid = true;
             let balanceErrorMessage = $("#balance-error-message");
-            
+
             if (balanceErrorMessage.length === 0) {
                 $("#accountingEntriesBody").after('<div id="balance-error-message" class="text-danger mt-2"></div>');
             }

@@ -1,14 +1,22 @@
-﻿@using Accounting_System.Models.AccountsReceivable
+@using Accounting_System.Models.AccountsReceivable
 @using Accounting_System.Utility
 @model SalesInvoice
 
 @{
     ViewData["Title"] = "Print Sales Invoice";
-    var netDiscount = Model.Amount - Model.Discount;
-    var netOfVatAmount = Model.Customer!.CustomerType == CS.VatType_Vatable ? netDiscount / 1.12m : netDiscount;
-    var vatAmount = Model.Customer.CustomerType == CS.VatType_Vatable ? netOfVatAmount * 0.12m : 0;
-    var withHoldingTaxAmount = Model.Customer.WithHoldingTax ? (netDiscount / 1.12m) * 0.01m : 0;
-    var withHoldingVatAmount = Model.Customer.WithHoldingVat ? (netDiscount / 1.12m) * 0.05m : 0;
+    var customerType = Model.Customer?.CustomerType;
+    var rawVatType = Model.Customer?.VatType;
+    var vatType = rawVatType?.Trim().Replace(" ", "-", StringComparison.Ordinal) ?? string.Empty;
+    var decimalFormat = customerType != "Government" ? CS.Two_Decimal_Format : CS.Four_Decimal_Format;
+    var grossAmount = Model.Amount;
+    var vatableSales = vatType == CS.VatType_Vatable ? grossAmount / 1.12m : 0m;
+    var zeroRatedSales = vatType == CS.VatType_ZeroRated ? grossAmount : 0m;
+    var exemptSales = vatType == CS.VatType_Exempt ? grossAmount : 0m;
+    var discount = Model.Discount;
+    var vatAmount = vatType == CS.VatType_Vatable ? vatableSales * 0.12m : 0m;
+    var ewtAmount = Model.CwtAmountPaid + Model.CwtBalance;
+    var wvatAmount = Model.CwVatAmountPaid + Model.CwVatBalance;
+    var amountDue = grossAmount - discount;
 }
 
 <br class="br-top" />
@@ -48,10 +56,10 @@
                     &nbsp; @Html.DisplayFor(model => model.Customer!.CustomerName) &nbsp;<br />
 
                     <span><b>Address:</b></span>
-                    &nbsp; @Html.DisplayFor(model => model.Customer!.CustomerAddress) &nbsp;<br />
+                    &nbsp; @(string.IsNullOrWhiteSpace(Model.CustomerAddress) ? Model.Customer?.CustomerAddress : Model.CustomerAddress) &nbsp;<br />
 
                     <span><b>TIN:</b></span>
-                    &nbsp; @Html.DisplayFor(model => model.Customer!.CustomerTin) &nbsp;<br />
+                    &nbsp; @(string.IsNullOrWhiteSpace(Model.CustomerTin) ? Model.Customer?.CustomerTin : Model.CustomerTin) &nbsp;<br />
 
                     <span><b>Business Style:</b></span>
                     &nbsp; @Html.DisplayFor(model => model.Customer!.BusinessStyle) &nbsp;
@@ -73,7 +81,7 @@
 </div>
 
 <div class="table-responsive" style="margin-top:20px;">
-    <table class="table-bordered w-100 text-center">
+    <table class="table-bordered document-grid w-100 text-center">
         <tbody>
             <tr>
                 <td><b>PRODUCT DESCRIPTION</b></td>
@@ -86,72 +94,24 @@
             <tr style="height:80px;">
                 <td>@Html.DisplayFor(model => model.Product!.ProductName)</td>
                 <td>@Html.DisplayFor(model => model.Product!.ProductUnit)</td>
-                <td>@Html.DisplayFor(model => model.Quantity)</td>
-                <td>@Html.DisplayFor(model => model.UnitPrice)</td>
-                <td>@Html.DisplayFor(model => model.Amount)</td>
+                <td>@Model.Quantity.ToString(decimalFormat)</td>
+                <td>@Model.UnitPrice.ToString(CS.Four_Decimal_Format)</td>
+                <td>@Model.Amount.ToString(decimalFormat)</td>
             </tr>
         </tbody>
     </table>
 </div>
-@{
-    if (Model.Customer.CustomerType == "Vatable")
-    {
-        if (Model.Customer.WithHoldingTax && !Model.Customer.WithHoldingVat)
-        {
-            <p style="line-height: 1; margin-top:20px;">
-                Creditable Withholding Tax with the amount of <b>@Html.DisplayFor(model => withHoldingTaxAmount)</b> is computed for this invoice.<br />
-                Please attach BIR Form 2307 to your payment if you deducted Expanded Withholding Tax.
-            </p>
-        }
-        else if (Model.Customer.WithHoldingVat && !Model.Customer.WithHoldingTax)
-        {
-            <p style="line-height: 1; margin-top:20px;">
-                Creditable Withholding Vat with the amount of <b>@Html.DisplayFor(model => withHoldingVatAmount)</b> is computed for this invoice.<br />
-                Please attach BIR Form 2306 to your payment if you deducted Expanded Withholding Vat.
-            </p>
-        }
-        else if (Model.Customer.WithHoldingTax && Model.Customer.WithHoldingVat)
-        {
-            <p style="line-height: 1; margin-top:20px;">
-                Creditable Withholding Tax with the amount of <b>@Html.DisplayFor(model => withHoldingTaxAmount)</b> is computed for this invoice.<br />
-                Creditable Withholding Vat with the amount of <b>@Html.DisplayFor(model => withHoldingVatAmount)</b> is computed for this invoice.<br />
-                Please attach BIR Form 2306 and 2307 to your payment if you deducted Expanded Withholding Tax and Vat.
-            </p>
-        }
-    }
-    else
-    {
-        if (Model.Customer.WithHoldingTax && !Model.Customer.WithHoldingVat)
-        {
-            <p style="line-height: 1; margin-top:20px;">
-                Creditable Withholding Tax with the amount of <b>@Html.DisplayFor(model => withHoldingTaxAmount)</b> is computed for this invoice.<br />
-                Please attach BIR Form 2307 to your payment if you deducted Expanded Withholding Tax.
-            </p>
-        }
-        else if (Model.Customer.WithHoldingVat && !Model.Customer.WithHoldingTax)
-        {
-            <p style="line-height: 1; margin-top:20px;">
-                Creditable Withholding Vat with the amount of <b>@Html.DisplayFor(model => withHoldingVatAmount)</b> is computed for this invoice.<br />
-                Please attach BIR Form 2306 to your payment if you deducted Expanded Withholding Vat.
-            </p>
-        }
-        else if (Model.Customer.WithHoldingTax && Model.Customer.WithHoldingVat)
-        {
-            <p style="line-height: 1; margin-top:20px;">
-                Creditable Withholding Tax with the amount of <b>@Html.DisplayFor(model => withHoldingTaxAmount)</b> is computed for this invoice.<br />
-                Creditable Withholding Vat with the amount of <b>@Html.DisplayFor(model => withHoldingVatAmount)</b> is computed for this invoice.<br />
-                Please attach BIR Form 2306 and 2307 to your payment if you deducted Expanded Withholding Tax and Vat.
-            </p>
-        }
-    }
-}
+
+<p style="line-height: 1; margin-top:20px;">
+    Please attach BIR 2307 to your payment.
+</p>
 
 <table class="w-100" style="height:170px; margin-top:20px;">
     <tbody>
         <tr>
             <td>
 
-                <table class="table-bordered w-100 h-100" style="padding: 0; margin: 0;">
+                <table class="table-bordered document-grid w-100 h-100" style="padding: 0; margin: 0;">
                     <tbody>
 
                         <tr class="h-100">
@@ -161,7 +121,7 @@
                 </table>
             </td>
             <td>
-                <table class="table-bordered w-100 h-100" style="padding: 0; margin: 0;">
+                <table class="table-bordered document-grid w-100 h-100" style="padding: 0; margin: 0;">
                     <tbody>
 
                         <tr class="align-text-top text-center text-nowrap">
@@ -188,75 +148,39 @@
                 </table>
             </td>
             <td>
-                <table class="table-bordered w-100 h-100" style="padding: 0; margin: 0;">
+                <table class="table-bordered document-grid w-100 h-100" style="padding: 0; margin: 0;">
                     <tbody class="text-nowrap table-font-bold">
                         <tr style="padding-left: 8%;">
-                            <td><b>Vatable Sales: </b></td>
-
-                            <td class="text-end">
-                                @if (Model.Customer.CustomerType == "Vatable")
-                                {
-                                    @Html.DisplayFor(model => netOfVatAmount)
-                                }
-                            </td>
+                            <td><b>VATable Sales: </b></td>
+                            <td class="text-end">@vatableSales.ToString(decimalFormat)</td>
                         </tr>
                         <tr style="padding-left: 8%;">
                             <td><b>Zero-Rated Sales: </b></td>
-
-                            <td class="text-end">
-                                @if (Model.Customer.CustomerType == "Zero Rated")
-                                {
-                                    @Html.DisplayFor(model => netOfVatAmount)
-                                }
-                            </td>
+                            <td class="text-end">@zeroRatedSales.ToString(decimalFormat)</td>
                         </tr>
                         <tr style="padding-left: 8%;">
                             <td><b>VAT-Exempt Sales: </b></td>
-
-                            <td class="text-end">
-                                @if (Model.Customer.CustomerType == "Exempt")
-                                {
-                                    @Html.DisplayFor(model => netOfVatAmount)
-                                }
-                            </td>
+                            <td class="text-end">@exemptSales.ToString(decimalFormat)</td>
                         </tr>
                         <tr style="padding-left: 8%;">
-                            <td><b>VAT Amount: </b></td>
-
-                            <td class="text-end">
-                                @if (Model.Customer.CustomerType == "Vatable")
-                                {
-                                    @Html.DisplayFor(model => vatAmount)
-                                }
-                            </td>
+                            <td><b>Less Discount: </b></td>
+                            <td class="text-end">@discount.ToString(decimalFormat)</td>
                         </tr>
                         <tr style="padding-left: 8%;">
-                            <td><b>Discount: </b></td>
-
-                            <td class="text-end">
-                                @if (Model.Discount != 0)
-                                {
-                                    <p style="height: 9px;">@Html.DisplayFor(model => model.Discount)</p>
-                                }
-                            </td>
+                            <td><b>Add VAT Amount: </b></td>
+                            <td class="text-end">@vatAmount.ToString(decimalFormat)</td>
                         </tr>
                         <tr style="padding-left: 8%;">
-                            <td><b>TOTAL SALES: </b></td>
-
-                            <td class="text-end">
-                                @if (Model.Discount == 0)
-                                {
-                                    @Model.Amount.ToString("N2")
-                                }
-                                else
-                                {
-                                    var otherDiscount = Model.Amount - Model.Discount;
-                                    @if (Model.Discount != 0)
-                                    {
-                                        @otherDiscount.ToString("N2")
-                                    }
-                                }
-                            </td>
+                            <td><b>Less Withholding Tax: </b></td>
+                            <td class="text-end">@ewtAmount.ToString(decimalFormat)</td>
+                        </tr>
+                        <tr style="padding-left: 8%;">
+                            <td><b>Less Withholding VAT: </b></td>
+                            <td class="text-end">@wvatAmount.ToString(decimalFormat)</td>
+                        </tr>
+                        <tr style="padding-left: 8%;">
+                            <td><b>Total Amount Due: </b></td>
+                            <td class="text-end">@amountDue.ToString(decimalFormat)</td>
                         </tr>
                     </tbody>
                 </table>
@@ -265,7 +189,7 @@
     </tbody>
 </table>
 
-<table class="table-bordered" style="margin-top:20px;">
+<table class="table-bordered document-grid" style="margin-top:20px;">
     <tbody>
         <tr style="line-height: 1;">
             <td class="align-text-top">RECEIVED the above items in good order and condition. The Undersigned agrees to pay the total amount of this invoice in accordance to the terms appearing to the terms above.</td>
@@ -330,7 +254,7 @@ else
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Replace with the actual URL that you want to redirect to
-                    
+
                     window.location.href = `@Url.Action("Post", "SalesInvoice")/${id}`;
                 }
             })

@@ -130,7 +130,7 @@ namespace Accounting_System.Controllers
             };
 
             viewModel.Header.COA = await _dbContext.ChartOfAccounts
-                .Where(coa => !coa.HasChildren)
+                .Where(coa => !coa.HasChildren && !coa.IsHidden)
                 .OrderBy(coa => coa.AccountId)
                 .Select(s => new SelectListItem
                 {
@@ -155,7 +155,7 @@ namespace Accounting_System.Controllers
         public async Task<IActionResult> Create(JournalVoucherVM? model, string[] accountNumber, decimal[]? debit, decimal[]? credit, CancellationToken cancellationToken)
         {
             model!.Header!.COA = await _dbContext.ChartOfAccounts
-                .Where(coa => !coa.HasChildren)
+                .Where(coa => !coa.HasChildren && !coa.IsHidden)
                 .OrderBy(coa => coa.AccountId)
                 .Select(s => new SelectListItem
                 {
@@ -209,6 +209,7 @@ namespace Accounting_System.Controllers
                     model.Header.CreatedBy = createdBy;
 
                     await _dbContext.AddAsync(model.Header, cancellationToken);
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
                     await _dbContext.SaveChangesAsync(cancellationToken);
 
                     #endregion --Saving the default entries
@@ -261,6 +262,8 @@ namespace Accounting_System.Controllers
                     }
 
                     #endregion --Audit Trail Recording
+
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
 
                     await _dbContext.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
@@ -641,7 +644,7 @@ namespace Accounting_System.Controllers
                 })
                 .ToListAsync(cancellationToken),
                 COA = await _dbContext.ChartOfAccounts
-                    .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber!.Contains(excludedNumber)) && !coa.HasChildren)
+                    .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber!.Contains(excludedNumber)) && !coa.HasChildren && !coa.IsHidden)
                     .Select(s => new SelectListItem
                     {
                         Value = s.AccountNumber,
@@ -763,6 +766,8 @@ namespace Accounting_System.Controllers
 
                         #endregion --Audit Trail Recording
 
+                        await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
+
                         await _dbContext.SaveChangesAsync(cancellationToken);  // await the SaveChangesAsync method
                         await transaction.CommitAsync(cancellationToken);
                         TempData["success"] = "Journal Voucher edited successfully";
@@ -787,7 +792,7 @@ namespace Accounting_System.Controllers
                     viewModel.COA = await _dbContext.ChartOfAccounts
                         .Where(coa =>
                             !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber =>
-                                coa.AccountNumber!.Contains(excludedNumber)) && !coa.HasChildren)
+                                coa.AccountNumber!.Contains(excludedNumber)) && !coa.HasChildren && !coa.IsHidden)
                         .Select(s => new SelectListItem
                         {
                             Value = s.AccountNumber,
@@ -811,7 +816,7 @@ namespace Accounting_System.Controllers
             viewModel.COA = await _dbContext.ChartOfAccounts
                 .Where(coa =>
                     !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber =>
-                        coa.AccountNumber!.Contains(excludedNumber)) && !coa.HasChildren)
+                        coa.AccountNumber!.Contains(excludedNumber)) && !coa.HasChildren && !coa.IsHidden)
                 .Select(s => new SelectListItem
                 {
                     Value = s.AccountNumber,
@@ -994,6 +999,16 @@ namespace Accounting_System.Controllers
                 worksheet4.Cells["E1"].Value = "Credit";
                 worksheet4.Cells["F1"].Value = "CVHeaderId";
                 worksheet4.Cells["G1"].Value = "OriginalDocumentId";
+                worksheet4.Cells["H1"].Value = "Amount";
+                worksheet4.Cells["I1"].Value = "AmountPaid";
+                worksheet4.Cells["J1"].Value = "SupplierId";
+                worksheet4.Cells["K1"].Value = "EwtPercent";
+                worksheet4.Cells["L1"].Value = "IsUserSelected";
+                worksheet4.Cells["M1"].Value = "IsVatable";
+                worksheet4.Cells["N1"].Value = "IsDisplayEntry";
+                worksheet4.Cells["O1"].Value = "SubAccountType";
+                worksheet4.Cells["P1"].Value = "SubAccountId";
+                worksheet4.Cells["Q1"].Value = "SubAccountName";
 
                 #endregion -- Check Voucher Details Table Header --
 
@@ -1057,6 +1072,9 @@ namespace Accounting_System.Controllers
                 worksheet2.Cells["E1"].Value = "Credit";
                 worksheet2.Cells["F1"].Value = "JVHeaderId";
                 worksheet2.Cells["G1"].Value = "OriginalDocumentId";
+                worksheet2.Cells["H1"].Value = "SubAccountType";
+                worksheet2.Cells["I1"].Value = "SubAccountId";
+                worksheet2.Cells["J1"].Value = "SubAccountName";
 
                 #endregion -- Journal Voucher Details Table Header --
 
@@ -1293,6 +1311,9 @@ namespace Accounting_System.Controllers
                     worksheet2.Cells[jvdRow, 5].Value = item.Credit;
                     worksheet2.Cells[jvdRow, 6].Value = item.JournalVoucherHeaderId;
                     worksheet2.Cells[jvdRow, 7].Value = item.JournalVoucherDetailId;
+                    worksheet2.Cells[jvdRow, 8].Value = item.SubAccountType?.ToString();
+                    worksheet2.Cells[jvdRow, 9].Value = item.SubAccountId;
+                    worksheet2.Cells[jvdRow, 10].Value = item.SubAccountName;
 
                     jvdRow++;
                 }
@@ -1323,6 +1344,10 @@ namespace Accounting_System.Controllers
                     worksheet4.Cells[cvdRow, 11].Value = item.EwtPercent;
                     worksheet4.Cells[cvdRow, 12].Value = item.IsUserSelected;
                     worksheet4.Cells[cvdRow, 13].Value = item.IsVatable;
+                    worksheet4.Cells[cvdRow, 14].Value = item.IsDisplayEntry;
+                    worksheet4.Cells[cvdRow, 15].Value = item.SubAccountType?.ToString();
+                    worksheet4.Cells[cvdRow, 16].Value = item.SubAccountId;
+                    worksheet4.Cells[cvdRow, 17].Value = item.SubAccountName;
 
                     cvdRow++;
                 }
@@ -1351,6 +1376,10 @@ namespace Accounting_System.Controllers
                     worksheet4.Cells[cvdRow, 11].Value = item.EwtPercent;
                     worksheet4.Cells[cvdRow, 12].Value = item.IsUserSelected;
                     worksheet4.Cells[cvdRow, 13].Value = item.IsVatable;
+                    worksheet4.Cells[cvdRow, 14].Value = item.IsDisplayEntry;
+                    worksheet4.Cells[cvdRow, 15].Value = item.SubAccountType?.ToString();
+                    worksheet4.Cells[cvdRow, 16].Value = item.SubAccountId;
+                    worksheet4.Cells[cvdRow, 17].Value = item.SubAccountName;
 
                     cvdRow++;
                 }
@@ -1462,6 +1491,10 @@ namespace Accounting_System.Controllers
                 #endregion -- Purchase Order Export --
 
                 // Convert the Excel package to a byte array
+                TransactionColumns.Export(worksheet, selectedList);
+                TransactionColumns.Export(worksheet3, selectedList.Where(x => x.CheckVoucherHeader != null).Select(x => x.CheckVoucherHeader!).GroupBy(x => x.CheckVoucherHeaderNo).Select(x => x.First()).Concat(checkVoucherPayment.GroupBy(x => x.CheckVoucherHeaderNo).Select(x => x.First())));
+                TransactionColumns.Export(worksheet6, getReceivingReport.GroupBy(x => x.ReceivingReportNo).Select(x => x.First()));
+                TransactionColumns.Export(worksheet5, getPurchaseOrder);
                 await VoucherExportDependencies.IncludeAsync(_dbContext, package, cancellationToken);
                 var excelBytes = await package.GetAsByteArrayAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);

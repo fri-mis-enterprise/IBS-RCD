@@ -33,9 +33,15 @@ public partial class WorkbookImport
                     : 0,
             };
 
+            if (sheet.HasColumn("Branch")) bankAccount.Branch = sheet.Text(row, "Branch");
+            if (sheet.HasColumn("AccountNo")) bankAccount.AccountNo = sheet.Text(row, "AccountNo");
+            if (sheet.HasColumn("IsActive")) bankAccount.IsActive = sheet.Value<bool>(row, "IsActive");
             var existing = bankAccountList.FirstOrDefault(x => x.OriginalBankId == bankAccount.OriginalBankId);
             if (existing != null)
             {
+                if (!sheet.HasColumn("Branch")) bankAccount.Branch = existing.Branch;
+                if (!sheet.HasColumn("AccountNo")) bankAccount.AccountNo = existing.AccountNo;
+                if (!sheet.HasColumn("IsActive")) bankAccount.IsActive = existing.IsActive;
                 await UpdateMasterAsync(existing, bankAccount, "BankAccount", cancellationToken);
                 continue;
             }
@@ -55,6 +61,25 @@ public partial class WorkbookImport
         var customerList = await _dbContext
             .Customers
             .ToListAsync(cancellationToken);
+
+        var sourceIds = new HashSet<int>();
+        for (var sourceRow = 2; sourceRow <= rowCount; sourceRow++)
+        {
+            if (sheet.IsEmpty(sourceRow)) continue;
+            var sourceId = sheet.RequiredValue<int>(sourceRow, "OriginalCustomerId");
+            if (sourceId <= 0 || !sourceIds.Add(sourceId))
+                throw new InvalidOperationException($"Customer row {sourceRow}: original customer IDs must be positive and unique.");
+            var matches = customerList.Where(c => c.OriginalCustomerId == sourceId).ToList();
+            if (matches.Count > 1)
+                throw new InvalidOperationException($"Multiple customers use original customer ID {sourceId}. Resolve the source mapping before importing.");
+            var sourceName = sheet.Text(sourceRow, "CustomerName");
+            if (sheet.HasColumn("Type") && !string.IsNullOrWhiteSpace(sheet.Text(sourceRow, "Type"))
+                && !string.Equals(sheet.Text(sourceRow, "Type"), "Documented", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"Customer row {sourceRow}: IBS-RCD accepts documented customers only.");
+            if (matches.Count == 1 && !string.Equals(matches[0].CustomerName.Trim(), sourceName.Trim(), StringComparison.OrdinalIgnoreCase)
+                && customerList.Any(c => c.CustomerId != matches[0].CustomerId && string.Equals(c.CustomerName.Trim(), sourceName.Trim(), StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException($"Customer row {sourceRow}: source ID {sourceId} belongs to a different local customer. The workbook's customer IDs do not match the existing source mapping. No customers were imported.");
+        }
 
         for (int row = 2; row <= rowCount; row++)  // Assuming the first row is the header
         {
@@ -77,9 +102,57 @@ public partial class WorkbookImport
                 OriginalCustomerNumber = sheet.Text(row, "OriginalCustomerNumber"),
             };
 
+            if (sheet.HasColumn("CustomerCode")) customer.CustomerCode = sheet.Text(row, "CustomerCode");
+            if (sheet.HasColumn("VatType")) customer.VatType = sheet.Text(row, "VatType");
+            if (sheet.HasColumn("IsActive")) customer.IsActive = sheet.Value<bool>(row, "IsActive");
+            if (sheet.HasColumn("EditedBy")) customer.EditedBy = sheet.Text(row, "EditedBy");
+            if (sheet.HasColumn("EditedDate")) customer.EditedDate = string.IsNullOrWhiteSpace(sheet.Text(row, "EditedDate")) ? null : sheet.Date(row, "EditedDate");
+            if (sheet.HasColumn("ClusterCode")) customer.ClusterCode = string.IsNullOrWhiteSpace(sheet.Text(row, "ClusterCode")) ? null : Enum.Parse<ClusterArea>(sheet.Text(row, "ClusterCode"), true);
+            if (sheet.HasColumn("StationCode")) customer.StationCode = sheet.Text(row, "StationCode");
+            if (sheet.HasColumn("CreditLimit")) customer.CreditLimit = sheet.Value<decimal>(row, "CreditLimit");
+            if (sheet.HasColumn("CreditLimitAsOfToday")) customer.CreditLimitAsOfToday = sheet.Value<decimal>(row, "CreditLimitAsOfToday");
+            if (sheet.HasColumn("HasBranch")) customer.HasBranch = sheet.Value<bool>(row, "HasBranch");
+            if (sheet.HasColumn("RetentionRate")) customer.RetentionRate = sheet.Value<decimal?>(row, "RetentionRate");
+            if (sheet.HasColumn("HasMultipleTerms")) customer.HasMultipleTerms = sheet.Value<bool>(row, "HasMultipleTerms");
+            if (sheet.HasColumn("RequiresPriceAdjustment")) customer.RequiresPriceAdjustment = sheet.Value<bool>(row, "RequiresPriceAdjustment");
+            if (sheet.HasColumn("CommissionRate")) customer.CommissionRate = sheet.Value<decimal>(row, "CommissionRate");
+            if (sheet.HasColumn("CwtPercent")) customer.CwtPercent = sheet.Value<decimal>(row, "CwtPercent");
+            if (sheet.HasColumn("CwVatPercent")) customer.CwVatPercent = sheet.Value<decimal>(row, "CwVatPercent");
+            if (!sheet.HasColumn("VatType") && customer.CustomerType is "Vatable" or "Zero Rated" or "Zero-Rated" or "Exempt") customer.VatType = customer.CustomerType;
             var existing = customerList.FirstOrDefault(x => x.OriginalCustomerId == customer.OriginalCustomerId);
+            if (customer.CustomerType is "Vatable" or "Zero Rated" or "Zero-Rated" or "Exempt")
+            {
+                customer.VatType = customer.CustomerType;
+                customer.CustomerType = existing?.CustomerType is "Retail" or "Industrial" or "Government" or "Reseller"
+                    ? existing.CustomerType : "Industrial";
+            }
+            if (sheet.HasColumn("CommissioneeId") && sheet.Value<int?>(row, "CommissioneeId") is int sourceCommissioneeId)
+                customer.CommissioneeId = await _dbContext.Suppliers.Where(s => s.OriginalSupplierId == sourceCommissioneeId)
+                    .Select(s => (int?)s.SupplierId).SingleOrDefaultAsync(cancellationToken)
+                    ?? throw new InvalidOperationException($"Customer row {row}: import commissionee supplier {sourceCommissioneeId} first.");
+            else
+                customer.CommissioneeId = existing?.CommissioneeId;
+            // A workbook transfers document metadata, not the locally stored document binary.
+            customer.BirDocumentFilePath = existing?.BirDocumentFilePath;
+            customer.BirDocumentFileName = existing?.BirDocumentFileName;
             if (existing != null)
             {
+                if (!sheet.HasColumn("CustomerCode")) customer.CustomerCode = existing.CustomerCode;
+                if (!sheet.HasColumn("VatType") && sheet.Text(row, "CustomerType") is not ("Vatable" or "Zero Rated" or "Zero-Rated" or "Exempt")) customer.VatType = existing.VatType;
+                if (!sheet.HasColumn("IsActive")) customer.IsActive = existing.IsActive;
+                if (!sheet.HasColumn("EditedBy")) customer.EditedBy = existing.EditedBy;
+                if (!sheet.HasColumn("EditedDate")) customer.EditedDate = existing.EditedDate;
+                if (!sheet.HasColumn("ClusterCode")) customer.ClusterCode = existing.ClusterCode;
+                if (!sheet.HasColumn("StationCode")) customer.StationCode = existing.StationCode;
+                if (!sheet.HasColumn("CreditLimit")) customer.CreditLimit = existing.CreditLimit;
+                if (!sheet.HasColumn("CreditLimitAsOfToday")) customer.CreditLimitAsOfToday = existing.CreditLimitAsOfToday;
+                if (!sheet.HasColumn("HasBranch")) customer.HasBranch = existing.HasBranch;
+                if (!sheet.HasColumn("RetentionRate")) customer.RetentionRate = existing.RetentionRate;
+                if (!sheet.HasColumn("HasMultipleTerms")) customer.HasMultipleTerms = existing.HasMultipleTerms;
+                if (!sheet.HasColumn("RequiresPriceAdjustment")) customer.RequiresPriceAdjustment = existing.RequiresPriceAdjustment;
+                if (!sheet.HasColumn("CommissionRate")) customer.CommissionRate = existing.CommissionRate;
+                if (!sheet.HasColumn("CwtPercent")) customer.CwtPercent = existing.CwtPercent;
+                if (!sheet.HasColumn("CwVatPercent")) customer.CwVatPercent = existing.CwVatPercent;
                 await UpdateMasterAsync(existing, customer, "Customer", cancellationToken, "Number");
                 continue;
             }
@@ -124,14 +197,30 @@ public partial class WorkbookImport
                 Category = sheet.Text(row, "Category"),
                 TradeName = sheet.Text(row, "TradeName"),
                 DefaultExpenseNumber = sheet.Text(row, "DefaultExpenseNumber"),
-                WithholdingTaxPercent = int.TryParse(sheet.Text(row, "WithholdingTaxPercent"), out int withholdingTaxPercent) ? withholdingTaxPercent : 0,
+                WithholdingTaxPercent = sheet.Value<decimal?>(row, "WithholdingTaxPercent"),
                 WithholdingTaxtitle = sheet.Text(row, "WithholdingTaxtitle"),
                 OriginalSupplierId = int.TryParse(sheet.Text(row, "OriginalSupplierId"), out int originalSupplierId) ? originalSupplierId : 0,
             };
 
+            if (sheet.HasColumn("SupplierCode")) supplier.SupplierCode = sheet.Text(row, "SupplierCode");
+            if (sheet.HasColumn("IsActive")) supplier.IsActive = sheet.Value<bool>(row, "IsActive");
+            if (sheet.HasColumn("EditedBy")) supplier.EditedBy = sheet.Text(row, "EditedBy");
+            if (sheet.HasColumn("EditedDate")) supplier.EditedDate = sheet.Date(row, "EditedDate");
+            if (sheet.HasColumn("EmployeeNumber")) supplier.EmployeeNumber = sheet.Text(row, "EmployeeNumber");
+            if (sheet.HasColumn("RequiresPriceAdjustment")) supplier.RequiresPriceAdjustment = sheet.Value<bool>(row, "RequiresPriceAdjustment");
+            if (sheet.HasColumn("ProofOfRegistrationFileName")) supplier.ProofOfRegistrationFileName = sheet.Text(row, "ProofOfRegistrationFileName");
+            if (sheet.HasColumn("ProofOfExemptionFileName")) supplier.ProofOfExemptionFileName = sheet.Text(row, "ProofOfExemptionFileName");
             var existing = supplierList.FirstOrDefault(x => x.OriginalSupplierId == supplier.OriginalSupplierId);
             if (existing != null)
             {
+                if (!sheet.HasColumn("SupplierCode")) supplier.SupplierCode = existing.SupplierCode;
+                if (!sheet.HasColumn("IsActive")) supplier.IsActive = existing.IsActive;
+                if (!sheet.HasColumn("EditedBy")) supplier.EditedBy = existing.EditedBy;
+                if (!sheet.HasColumn("EditedDate")) supplier.EditedDate = existing.EditedDate;
+                if (!sheet.HasColumn("EmployeeNumber")) supplier.EmployeeNumber = existing.EmployeeNumber;
+                if (!sheet.HasColumn("RequiresPriceAdjustment")) supplier.RequiresPriceAdjustment = existing.RequiresPriceAdjustment;
+                if (!sheet.HasColumn("ProofOfRegistrationFileName")) supplier.ProofOfRegistrationFileName = existing.ProofOfRegistrationFileName;
+                if (!sheet.HasColumn("ProofOfExemptionFileName")) supplier.ProofOfExemptionFileName = existing.ProofOfExemptionFileName;
                 await UpdateMasterAsync(existing, supplier, "Supplier", cancellationToken, "Number");
                 continue;
             }
@@ -165,9 +254,15 @@ public partial class WorkbookImport
                 OriginalProductId = int.TryParse(sheet.Text(row, "OriginalProductId"), out int originalProductId) ? originalProductId : 0,
             };
 
+            if (sheet.HasColumn("IsActive")) product.IsActive = sheet.Value<bool>(row, "IsActive");
+            if (sheet.HasColumn("EditedBy")) product.EditedBy = sheet.Text(row, "EditedBy");
+            if (sheet.HasColumn("EditedDate")) product.EditedDate = sheet.Date(row, "EditedDate");
             var existing = productList.FirstOrDefault(x => x.OriginalProductId == product.OriginalProductId);
             if (existing != null)
             {
+                if (!sheet.HasColumn("IsActive")) product.IsActive = existing.IsActive;
+                if (!sheet.HasColumn("EditedBy")) product.EditedBy = existing.EditedBy;
+                if (!sheet.HasColumn("EditedDate")) product.EditedDate = existing.EditedDate;
                 await UpdateMasterAsync(existing, product, "Product", cancellationToken);
                 continue;
             }

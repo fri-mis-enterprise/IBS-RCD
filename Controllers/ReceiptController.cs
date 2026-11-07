@@ -18,7 +18,7 @@ using Microsoft.IdentityModel.Tokens;
 namespace Accounting_System.Controllers
 {
     [Authorize]
-    public class ReceiptController : Controller
+    public partial class ReceiptController : Controller
     {
         private readonly ApplicationDbContext _dbContext;
 
@@ -129,7 +129,7 @@ namespace Accounting_System.Controllers
         {
             var viewModel = new CollectionReceipt
             {
-                Customers = await _dbContext.Customers
+                Customers = await _dbContext.Customers.Where(x => x.IsActive)
                     .OrderBy(c => c.CustomerId)
                     .Select(s => new SelectListItem
                     {
@@ -138,7 +138,7 @@ namespace Accounting_System.Controllers
                     })
                     .ToListAsync(cancellationToken),
                 ChartOfAccounts = await _dbContext.ChartOfAccounts
-                    .Where(coa => !coa.HasChildren)
+                    .Where(coa => !coa.HasChildren && !coa.IsHidden)
                     .OrderBy(coa => coa.AccountId)
                     .Select(s => new SelectListItem
                     {
@@ -154,7 +154,7 @@ namespace Accounting_System.Controllers
         [HttpPost]
         public async Task<IActionResult> SingleCollectionCreateForSales(CollectionReceipt model, string[] accountTitleText, decimal[] accountAmount, string[] accountTitle, IFormFile? bir2306, IFormFile? bir2307, CancellationToken cancellationToken)
         {
-            model.Customers = await _dbContext.Customers
+            model.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                .OrderBy(c => c.CustomerId)
                .Select(s => new SelectListItem
                {
@@ -174,7 +174,7 @@ namespace Accounting_System.Controllers
                 .ToListAsync(cancellationToken);
 
             model.ChartOfAccounts = await _dbContext.ChartOfAccounts
-                .Where(coa => !coa.HasChildren)
+                .Where(coa => !coa.HasChildren && !coa.IsHidden)
                 .OrderBy(coa => coa.AccountId)
                 .Select(s => new SelectListItem
                 {
@@ -246,6 +246,7 @@ namespace Accounting_System.Controllers
                             }
 
                             model.F2306FilePath = fileSavePath;
+                        model.F2306FileName = Path.GetFileName(bir2306.FileName);
                             model.IsCertificateUpload = true;
                         }
 
@@ -267,6 +268,7 @@ namespace Accounting_System.Controllers
                             }
 
                             model.F2307FilePath = fileSavePath;
+                        model.F2307FileName = Path.GetFileName(bir2307.FileName);
                             model.IsCertificateUpload = true;
                         }
 
@@ -314,6 +316,8 @@ namespace Accounting_System.Controllers
 
                     #endregion --Offsetting function
 
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
+
                     await _dbContext.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
                     return RedirectToAction(nameof(CollectionIndex));
@@ -337,7 +341,7 @@ namespace Accounting_System.Controllers
         {
             var viewModel = new CollectionReceipt
             {
-                Customers = await _dbContext.Customers
+                Customers = await _dbContext.Customers.Where(x => x.IsActive)
                     .OrderBy(c => c.CustomerId)
                     .Select(s => new SelectListItem
                     {
@@ -346,7 +350,7 @@ namespace Accounting_System.Controllers
                     })
                     .ToListAsync(cancellationToken),
                 ChartOfAccounts = await _dbContext.ChartOfAccounts
-                    .Where(coa => !coa.HasChildren)
+                    .Where(coa => !coa.HasChildren && !coa.IsHidden)
                     .OrderBy(coa => coa.AccountId)
                     .Select(s => new SelectListItem
                     {
@@ -362,7 +366,7 @@ namespace Accounting_System.Controllers
         [HttpPost]
         public async Task<IActionResult> MultipleCollectionCreateForSales(CollectionReceipt model, string[] accountTitleText, decimal[] accountAmount, string[] accountTitle, IFormFile? bir2306, IFormFile? bir2307, CancellationToken cancellationToken)
         {
-            model.Customers = await _dbContext.Customers
+            model.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                .OrderBy(c => c.CustomerId)
                .Select(s => new SelectListItem
                {
@@ -382,7 +386,7 @@ namespace Accounting_System.Controllers
                 .ToListAsync(cancellationToken);
 
             model.ChartOfAccounts = await _dbContext.ChartOfAccounts
-                .Where(coa => !coa.HasChildren)
+                .Where(coa => !coa.HasChildren && !coa.IsHidden)
                 .OrderBy(coa => coa.AccountId)
                 .Select(s => new SelectListItem
                 {
@@ -466,6 +470,7 @@ namespace Accounting_System.Controllers
                             }
 
                             model.F2306FilePath = fileSavePath;
+                        model.F2306FileName = Path.GetFileName(bir2306.FileName);
                             model.IsCertificateUpload = true;
                         }
 
@@ -487,6 +492,7 @@ namespace Accounting_System.Controllers
                             }
 
                             model.F2307FilePath = fileSavePath;
+                        model.F2307FileName = Path.GetFileName(bir2307.FileName);
                             model.IsCertificateUpload = true;
                         }
 
@@ -534,6 +540,8 @@ namespace Accounting_System.Controllers
 
                     #endregion --Offsetting function
 
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
+
                     await _dbContext.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
                     return RedirectToAction(nameof(CollectionIndex));
@@ -557,7 +565,7 @@ namespace Accounting_System.Controllers
         {
             var viewModel = new CollectionReceipt
             {
-                Customers = await _dbContext.Customers
+                Customers = await _dbContext.Customers.Where(x => x.IsActive)
                     .OrderBy(c => c.CustomerId)
                     .Select(s => new SelectListItem
                     {
@@ -566,7 +574,7 @@ namespace Accounting_System.Controllers
                     })
                     .ToListAsync(cancellationToken),
                 ChartOfAccounts = await _dbContext.ChartOfAccounts
-                    .Where(coa => !coa.HasChildren)
+                    .Where(coa => !coa.HasChildren && !coa.IsHidden)
                     .OrderBy(coa => coa.AccountId)
                     .Select(s => new SelectListItem
                     {
@@ -582,7 +590,7 @@ namespace Accounting_System.Controllers
         [HttpPost]
         public async Task<IActionResult> CollectionCreateForService(CollectionReceipt model, string[] accountTitleText, decimal[] accountAmount, string[] accountTitle, IFormFile? bir2306, IFormFile? bir2307, CancellationToken cancellationToken)
         {
-            model.Customers = await _dbContext.Customers
+            model.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                .OrderBy(c => c.CustomerId)
                .Select(s => new SelectListItem
                {
@@ -602,7 +610,7 @@ namespace Accounting_System.Controllers
                 .ToListAsync(cancellationToken);
 
             model.ChartOfAccounts = await _dbContext.ChartOfAccounts
-                .Where(coa => !coa.HasChildren)
+                .Where(coa => !coa.HasChildren && !coa.IsHidden)
                 .OrderBy(coa => coa.AccountId)
                 .Select(s => new SelectListItem
                 {
@@ -673,6 +681,7 @@ namespace Accounting_System.Controllers
                             }
 
                             model.F2306FilePath = fileSavePath;
+                        model.F2306FileName = Path.GetFileName(bir2306.FileName);
                             model.IsCertificateUpload = true;
                         }
 
@@ -694,6 +703,7 @@ namespace Accounting_System.Controllers
                             }
 
                             model.F2307FilePath = fileSavePath;
+                        model.F2307FileName = Path.GetFileName(bir2307.FileName);
                             model.IsCertificateUpload = true;
                         }
 
@@ -740,6 +750,8 @@ namespace Accounting_System.Controllers
                     await _dbContext.AddRangeAsync(offsettings, cancellationToken);
 
                     #endregion --Offsetting function
+
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
 
                     await _dbContext.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
@@ -865,7 +877,7 @@ namespace Accounting_System.Controllers
                 .FirstOrDefaultAsync(si => si.SalesInvoiceId == invoiceNo, cancellationToken);
 
                 var netDiscount = si!.Amount - si.Discount;
-                var netOfVatAmount = si.Customer!.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(netDiscount) : netDiscount;
+                var netOfVatAmount = si.Customer!.VatType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(netDiscount) : netDiscount;
                 var withHoldingTaxAmount = si.Customer.WithHoldingTax ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m) : 0;
                 var withHoldingVatAmount = si.Customer.WithHoldingVat ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.05m) : 0;
 
@@ -886,7 +898,7 @@ namespace Accounting_System.Controllers
                 .Include(c => c.Customer)
                 .FirstOrDefaultAsync(si => si.ServiceInvoiceId == invoiceNo, cancellationToken);
 
-                var netOfVatAmount = sv!.Customer!.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(sv.Amount) - sv.Discount : sv.Amount - sv.Discount;
+                var netOfVatAmount = sv!.Customer!.VatType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(sv.Amount) - sv.Discount : sv.Amount - sv.Discount;
                 var withHoldingTaxAmount = sv.Customer.WithHoldingTax ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m) : 0;
                 var withHoldingVatAmount = sv.Customer.WithHoldingVat ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.05m) : 0;
 
@@ -913,7 +925,7 @@ namespace Accounting_System.Controllers
                 var amount = salesInvoice.Amount;
                 var amountPaid = salesInvoice.AmountPaid;
                 var netAmount = salesInvoice.Amount - salesInvoice.Discount;
-                var vatAmount = salesInvoice.Customer!.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeVatAmount((netAmount / 1.12m) * 0.12m) : 0;
+                var vatAmount = salesInvoice.Customer!.VatType == CS.VatType_Vatable ? _generalRepo.ComputeVatAmount((netAmount / 1.12m) * 0.12m) : 0;
                 var ewtAmount = salesInvoice.Customer.WithHoldingTax ? _generalRepo.ComputeEwtAmount((netAmount / 1.12m), 0.01m) : 0;
                 var wvatAmount = salesInvoice.Customer.WithHoldingVat ? _generalRepo.ComputeEwtAmount((netAmount / 1.12m), 0.05m) : 0;
                 var balance = amount - amountPaid;
@@ -943,7 +955,7 @@ namespace Accounting_System.Controllers
                 .FirstOrDefaultAsync(si => siNo.Contains(si.SalesInvoiceId), cancellationToken);
 
                 var netDiscount = si!.Amount - si.Discount;
-                var netOfVatAmount = si.Customer!.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(netDiscount) : netDiscount;
+                var netOfVatAmount = si.Customer!.VatType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(netDiscount) : netDiscount;
                 var withHoldingTaxAmount = si.Customer.WithHoldingTax ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m) : 0;
                 var withHoldingVatAmount = si.Customer.WithHoldingVat ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.05m) : 0;
 
@@ -974,7 +986,7 @@ namespace Accounting_System.Controllers
                 return NotFound();
             }
 
-            existingModel.Customers = await _dbContext.Customers
+            existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                .OrderBy(c => c.CustomerId)
                .Select(s => new SelectListItem
                {
@@ -1004,7 +1016,7 @@ namespace Accounting_System.Controllers
                 .ToListAsync(cancellationToken);
 
             existingModel.ChartOfAccounts = await _dbContext.ChartOfAccounts
-                .Where(coa => !coa.HasChildren)
+                .Where(coa => !coa.HasChildren && !coa.IsHidden)
                 .OrderBy(coa => coa.AccountId)
                 .Select(s => new SelectListItem
                 {
@@ -1049,7 +1061,7 @@ namespace Accounting_System.Controllers
                     if (computeTotalInModelIfZero == 0)
                     {
                         TempData["error"] = "Please input atleast one type form of payment";
-                        existingModel.Customers = await _dbContext.Customers
+                        existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                             .OrderBy(c => c.CustomerId)
                             .Select(s => new SelectListItem
                             {
@@ -1079,7 +1091,7 @@ namespace Accounting_System.Controllers
                             .ToListAsync(cancellationToken);
 
                         existingModel.ChartOfAccounts = await _dbContext.ChartOfAccounts
-                            .Where(coa => !coa.HasChildren)
+                            .Where(coa => !coa.HasChildren && !coa.IsHidden)
                             .OrderBy(coa => coa.AccountId)
                             .Select(s => new SelectListItem
                             {
@@ -1102,6 +1114,15 @@ namespace Accounting_System.Controllers
                     existingModel.ManagerCheckAmount = model.ManagerCheckAmount;
                     existingModel.EWT = model.EWT;
                     existingModel.WVAT = model.WVAT;
+                    existingModel.EwtPeriodFrom = model.EwtPeriodFrom;
+                    existingModel.EwtPeriodTo = model.EwtPeriodTo;
+                    existingModel.EwtReference1 = model.EwtReference1;
+                    existingModel.EwtReference2 = model.EwtReference2;
+                    existingModel.CwVatPeriodFrom = model.CwVatPeriodFrom;
+                    existingModel.CwVatPeriodTo = model.CwVatPeriodTo;
+                    existingModel.CwVatReference1 = model.CwVatReference1;
+                    existingModel.CwVatReference2 = model.CwVatReference2;
+                    existingModel.BatchNumber = model.BatchNumber;
                     existingModel.Total = computeTotalInModelIfZero;
 
                         if (bir2306 != null && bir2306.Length > 0)
@@ -1122,6 +1143,7 @@ namespace Accounting_System.Controllers
                             }
 
                             existingModel.F2306FilePath = fileSavePath;
+                            existingModel.F2306FileName = Path.GetFileName(bir2306.FileName);
                             existingModel.IsCertificateUpload = true;
                         }
 
@@ -1143,6 +1165,7 @@ namespace Accounting_System.Controllers
                             }
 
                             existingModel.F2307FilePath = fileSavePath;
+                            existingModel.F2307FileName = Path.GetFileName(bir2307.FileName);
                             existingModel.IsCertificateUpload = true;
                         }
 
@@ -1240,6 +1263,8 @@ namespace Accounting_System.Controllers
 
                         #endregion --Audit Trail Recording
 
+                        await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
+
                         await _dbContext.SaveChangesAsync(cancellationToken);
                         await transaction.CommitAsync(cancellationToken);
                         TempData["success"] = "Collection Receipt edited successfully";
@@ -1253,7 +1278,7 @@ namespace Accounting_System.Controllers
                 catch (Exception ex)
                 {
                  await transaction.RollbackAsync(cancellationToken);
-                 existingModel.Customers = await _dbContext.Customers
+                 existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                      .OrderBy(c => c.CustomerId)
                      .Select(s => new SelectListItem
                      {
@@ -1283,7 +1308,7 @@ namespace Accounting_System.Controllers
                      .ToListAsync(cancellationToken);
 
                  existingModel.ChartOfAccounts = await _dbContext.ChartOfAccounts
-                     .Where(coa => !coa.HasChildren)
+                     .Where(coa => !coa.HasChildren && !coa.IsHidden)
                      .OrderBy(coa => coa.AccountId)
                      .Select(s => new SelectListItem
                      {
@@ -1298,7 +1323,7 @@ namespace Accounting_System.Controllers
             else
             {
                 TempData["error"] = "The information you submitted is not valid!";
-                existingModel.Customers = await _dbContext.Customers
+                existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                     .OrderBy(c => c.CustomerId)
                     .Select(s => new SelectListItem
                     {
@@ -1328,7 +1353,7 @@ namespace Accounting_System.Controllers
                     .ToListAsync(cancellationToken);
 
                 existingModel.ChartOfAccounts = await _dbContext.ChartOfAccounts
-                    .Where(coa => !coa.HasChildren)
+                    .Where(coa => !coa.HasChildren && !coa.IsHidden)
                     .OrderBy(coa => coa.AccountId)
                     .Select(s => new SelectListItem
                     {
@@ -1354,7 +1379,7 @@ namespace Accounting_System.Controllers
                 return NotFound();
             }
 
-            existingModel.Customers = await _dbContext.Customers
+            existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                .OrderBy(c => c.CustomerId)
                .Select(s => new SelectListItem
                {
@@ -1377,7 +1402,7 @@ namespace Accounting_System.Controllers
             }
 
             existingModel.ChartOfAccounts = await _dbContext.ChartOfAccounts
-                .Where(coa => !coa.HasChildren)
+                .Where(coa => !coa.HasChildren && !coa.IsHidden)
                 .OrderBy(coa => coa.AccountId)
                 .Select(s => new SelectListItem
                 {
@@ -1421,7 +1446,7 @@ namespace Accounting_System.Controllers
                     if (computeTotalInModelIfZero == 0)
                     {
                         TempData["error"] = "Please input atleast one type form of payment";
-                        existingModel.Customers = await _dbContext.Customers
+                        existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                             .OrderBy(c => c.CustomerId)
                             .Select(s => new SelectListItem
                             {
@@ -1441,7 +1466,7 @@ namespace Accounting_System.Controllers
                             .ToListAsync(cancellationToken);
 
                         existingModel.ChartOfAccounts = await _dbContext.ChartOfAccounts
-                            .Where(coa => !coa.HasChildren)
+                            .Where(coa => !coa.HasChildren && !coa.IsHidden)
                             .OrderBy(coa => coa.AccountId)
                             .Select(s => new SelectListItem
                             {
@@ -1483,6 +1508,15 @@ namespace Accounting_System.Controllers
                     existingModel.ManagerCheckAmount = model.ManagerCheckAmount;
                     existingModel.EWT = model.EWT;
                     existingModel.WVAT = model.WVAT;
+                    existingModel.EwtPeriodFrom = model.EwtPeriodFrom;
+                    existingModel.EwtPeriodTo = model.EwtPeriodTo;
+                    existingModel.EwtReference1 = model.EwtReference1;
+                    existingModel.EwtReference2 = model.EwtReference2;
+                    existingModel.CwVatPeriodFrom = model.CwVatPeriodFrom;
+                    existingModel.CwVatPeriodTo = model.CwVatPeriodTo;
+                    existingModel.CwVatReference1 = model.CwVatReference1;
+                    existingModel.CwVatReference2 = model.CwVatReference2;
+                    existingModel.BatchNumber = model.BatchNumber;
                     existingModel.Total = computeTotalInModelIfZero;
 
                         if (bir2306 != null && bir2306.Length > 0)
@@ -1503,6 +1537,7 @@ namespace Accounting_System.Controllers
                             }
 
                             existingModel.F2306FilePath = fileSavePath;
+                            existingModel.F2306FileName = Path.GetFileName(bir2306.FileName);
                             existingModel.IsCertificateUpload = true;
                         }
 
@@ -1524,6 +1559,7 @@ namespace Accounting_System.Controllers
                             }
 
                             existingModel.F2307FilePath = fileSavePath;
+                            existingModel.F2307FileName = Path.GetFileName(bir2307.FileName);
                             existingModel.IsCertificateUpload = true;
                         }
 
@@ -1621,6 +1657,8 @@ namespace Accounting_System.Controllers
 
                         #endregion --Audit Trail Recording
 
+                        await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
+
                         await _dbContext.SaveChangesAsync(cancellationToken);
                         await transaction.CommitAsync(cancellationToken);
                         TempData["success"] = "Collection Receipt edited successfully";
@@ -1634,7 +1672,7 @@ namespace Accounting_System.Controllers
                 catch (Exception ex)
                 {
                  await transaction.RollbackAsync(cancellationToken);
-                 existingModel.Customers = await _dbContext.Customers
+                 existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                      .OrderBy(c => c.CustomerId)
                      .Select(s => new SelectListItem
                      {
@@ -1654,7 +1692,7 @@ namespace Accounting_System.Controllers
                      .ToListAsync(cancellationToken);
 
                  existingModel.ChartOfAccounts = await _dbContext.ChartOfAccounts
-                     .Where(coa => !coa.HasChildren)
+                     .Where(coa => !coa.HasChildren && !coa.IsHidden)
                      .OrderBy(coa => coa.AccountId)
                      .Select(s => new SelectListItem
                      {
@@ -1669,7 +1707,7 @@ namespace Accounting_System.Controllers
             else
             {
                 TempData["error"] = "The information you submitted is not valid!";
-                existingModel.Customers = await _dbContext.Customers
+                existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                     .OrderBy(c => c.CustomerId)
                     .Select(s => new SelectListItem
                     {
@@ -1689,7 +1727,7 @@ namespace Accounting_System.Controllers
                     .ToListAsync(cancellationToken);
 
                 existingModel.ChartOfAccounts = await _dbContext.ChartOfAccounts
-                    .Where(coa => !coa.HasChildren)
+                    .Where(coa => !coa.HasChildren && !coa.IsHidden)
                     .OrderBy(coa => coa.AccountId)
                     .Select(s => new SelectListItem
                     {
@@ -1982,6 +2020,8 @@ namespace Accounting_System.Controllers
                 worksheet3.Cells["AB1"].Value = "CanceledDate";
                 worksheet3.Cells["AC1"].Value = "VoidedBy";
                 worksheet3.Cells["AD1"].Value = "VoidedDate";
+                worksheet3.Cells["AE1"].Value = "CwtPercent";
+                worksheet3.Cells["AF1"].Value = "CwVatPercent";
 
                 #endregion -- Sales Invoice Table Header --
 
@@ -2016,6 +2056,8 @@ namespace Accounting_System.Controllers
                 worksheet4.Cells["Y1"].Value = "CanceledDate";
                 worksheet4.Cells["Z1"].Value = "VoidedBy";
                 worksheet4.Cells["AA1"].Value = "VoidedDate";
+                worksheet4.Cells["AB1"].Value = "CwtPercent";
+                worksheet4.Cells["AC1"].Value = "CwVatPercent";
 
                 #endregion -- Service Invoice Table Header --
 
@@ -2173,6 +2215,8 @@ namespace Accounting_System.Controllers
                     worksheet3.Cells[siRow, 28].Value = item.SalesInvoice.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[siRow, 29].Value = item.SalesInvoice.VoidedBy;
                     worksheet3.Cells[siRow, 30].Value = item.SalesInvoice.VoidedDate?.ToString(CS.ImportDateTimeFormat);
+                    worksheet3.Cells[siRow, 31].Value = item.SalesInvoice.CwtPercent;
+                    worksheet3.Cells[siRow, 32].Value = item.SalesInvoice.CwVatPercent;
 
                     siRow++;
                 }
@@ -2216,6 +2260,8 @@ namespace Accounting_System.Controllers
                     worksheet4.Cells[svRow, 25].Value = item.ServiceInvoice.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet4.Cells[svRow, 26].Value = item.ServiceInvoice.VoidedBy;
                     worksheet4.Cells[svRow, 27].Value = item.ServiceInvoice.VoidedDate?.ToString(CS.ImportDateTimeFormat);
+                    worksheet4.Cells[svRow, 28].Value = item.ServiceInvoice.CwtPercent;
+                    worksheet4.Cells[svRow, 29].Value = item.ServiceInvoice.CwVatPercent;
 
                     svRow++;
                 }
@@ -2260,6 +2306,8 @@ namespace Accounting_System.Controllers
                     worksheet3.Cells[siRow, 28].Value = item.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[siRow, 29].Value = item.VoidedBy;
                     worksheet3.Cells[siRow, 30].Value = item.VoidedDate?.ToString(CS.ImportDateTimeFormat);
+                    worksheet3.Cells[siRow, 31].Value = item.CwtPercent;
+                    worksheet3.Cells[siRow, 32].Value = item.CwVatPercent;
 
                     siRow++;
                 }
@@ -2294,6 +2342,9 @@ namespace Accounting_System.Controllers
                 #endregion -- Offsetting Export --
 
                 // Convert the Excel package to a byte array
+                TransactionColumns.Export(worksheet, selectedList);
+                TransactionColumns.Export(worksheet3, selectedList.Where(x => x.SalesInvoice != null).Select(x => x.SalesInvoice!).Concat(getSalesInvoice));
+                TransactionColumns.Export(worksheet4, selectedList.Where(x => x.ServiceInvoice != null).Select(x => x.ServiceInvoice!));
                 var excelBytes = await package.GetAsByteArrayAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"CollectionReceiptList_IBS-RCD_{DateTime.Now:yyyyddMMHHmmss}.xlsx");

@@ -120,14 +120,14 @@ namespace Accounting_System.Controllers
         {
             var viewModel = new PurchaseOrder
             {
-                Suppliers = await _dbContext.Suppliers
+                Suppliers = await _dbContext.Suppliers.Where(x => x.IsActive)
                     .Select(s => new SelectListItem
                     {
                         Value = s.SupplierId.ToString(),
                         Text = s.SupplierName
                     })
                     .ToListAsync(cancellationToken),
-                Products = await _dbContext.Products
+                Products = await _dbContext.Products.Where(x => x.IsActive)
                     .Select(s => new SelectListItem
                     {
                         Value = s.ProductId.ToString(),
@@ -143,7 +143,7 @@ namespace Accounting_System.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PurchaseOrder model, CancellationToken cancellationToken)
         {
-            model.Suppliers = await _dbContext.Suppliers
+            model.Suppliers = await _dbContext.Suppliers.Where(x => x.IsActive)
                 .Select(s => new SelectListItem
                 {
                     Value = s.SupplierId.ToString(),
@@ -151,7 +151,7 @@ namespace Accounting_System.Controllers
                 })
                 .ToListAsync(cancellationToken);
 
-            model.Products = await _dbContext.Products
+            model.Products = await _dbContext.Products.Where(x => x.IsActive)
                 .Select(s => new SelectListItem
                 {
                     Value = s.ProductId.ToString(),
@@ -202,6 +202,8 @@ namespace Accounting_System.Controllers
 
                     #endregion --Audit Trail Recording
 
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
+
                     await _dbContext.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
                     return RedirectToAction(nameof(Index));
@@ -230,7 +232,7 @@ namespace Accounting_System.Controllers
 
             var purchaseOrder = await _purchaseOrderRepo.FindPurchaseOrder(id, cancellationToken);
 
-            purchaseOrder.Suppliers = await _dbContext.Suppliers
+            purchaseOrder.Suppliers = await _dbContext.Suppliers.Where(x => x.IsActive)
                 .Select(s => new SelectListItem
                 {
                     Value = s.SupplierId.ToString(),
@@ -238,7 +240,7 @@ namespace Accounting_System.Controllers
                 })
                 .ToListAsync(cancellationToken);
 
-            purchaseOrder.Products = await _dbContext.Products
+            purchaseOrder.Products = await _dbContext.Products.Where(x => x.IsActive)
                 .Select(s => new SelectListItem
                 {
                     Value = s.ProductId.ToString(),
@@ -275,6 +277,10 @@ namespace Accounting_System.Controllers
                     existingModel.Amount = model.Quantity * model.Price;
                     existingModel.Remarks = model.Remarks;
                     existingModel.Terms = model.Terms;
+                    existingModel.TriggerDate = model.TriggerDate;
+                    existingModel.TypeOfPurchase = model.TypeOfPurchase;
+                    existingModel.SupplierSalesOrderNo = model.SupplierSalesOrderNo;
+                    existingModel.OldPoNo = model.OldPoNo;
                     existingModel.SupplierNo = await _purchaseOrderRepo.GetSupplierNoAsync(model.SupplierId, cancellationToken);
                     existingModel.ProductNo = await _purchaseOrderRepo.GetProductNoAsync(model.ProductId, cancellationToken);
 
@@ -291,6 +297,8 @@ namespace Accounting_System.Controllers
 
                         #endregion --Audit Trail Recording
 
+                        await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
+
                         await _dbContext.SaveChangesAsync(cancellationToken);
                         await transaction.CommitAsync(cancellationToken);
                         TempData["success"] = "Purchase Order updated successfully";
@@ -305,7 +313,7 @@ namespace Accounting_System.Controllers
                 catch (Exception ex)
                 {
                  await transaction.RollbackAsync(cancellationToken);
-                 existingModel!.Suppliers = await _dbContext.Suppliers
+                 existingModel!.Suppliers = await _dbContext.Suppliers.Where(x => x.IsActive)
                      .Select(s => new SelectListItem
                      {
                          Value = s.SupplierId.ToString(),
@@ -313,7 +321,7 @@ namespace Accounting_System.Controllers
                      })
                      .ToListAsync(cancellationToken);
 
-                 existingModel.Products = await _dbContext.Products
+                 existingModel.Products = await _dbContext.Products.Where(x => x.IsActive)
                      .Select(s => new SelectListItem
                      {
                          Value = s.ProductId.ToString(),
@@ -325,7 +333,7 @@ namespace Accounting_System.Controllers
                 }
             }
 
-            existingModel!.Suppliers = await _dbContext.Suppliers
+            existingModel!.Suppliers = await _dbContext.Suppliers.Where(x => x.IsActive)
                 .Select(s => new SelectListItem
                 {
                     Value = s.SupplierId.ToString(),
@@ -333,7 +341,7 @@ namespace Accounting_System.Controllers
                 })
                 .ToListAsync(cancellationToken);
 
-            existingModel.Products = await _dbContext.Products
+            existingModel.Products = await _dbContext.Products.Where(x => x.IsActive)
                 .Select(s => new SelectListItem
                 {
                     Value = s.ProductId.ToString(),
@@ -779,6 +787,7 @@ namespace Accounting_System.Controllers
                 }
 
                 // Convert the Excel package to a byte array
+                TransactionColumns.Export(worksheet, selectedList);
                 var excelBytes = await package.GetAsByteArrayAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"PurchaseOrderList_IBS-RCD_{DateTime.Now:yyyyddMMHHmmss}.xlsx");

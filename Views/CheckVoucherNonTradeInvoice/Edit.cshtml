@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="~/css/form-style.css" asp-append-version="true"/>
 @model Accounting_System.Models.ViewModels.CheckVoucherNonTradeInvoicingViewModel
 
 @{
@@ -156,6 +157,7 @@
                         </div>
                     </div>
                 </div>
+                <partial name="_VoucherDocumentationFields" for="Documentation" />
                 <div class="card-footer">
                     <div class="d-flex justify-content-end mt-3">
                         <button id="submitButton" class="btn btn-success me-2" type="submit">
@@ -173,6 +175,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/voucher-documentation.js" asp-append-version="true"></script>
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }

@@ -32,5 +32,12 @@ namespace Accounting_System.Models.AccountsPayable
         public JournalVoucherHeader JournalVoucherHeader { get; set; }
 
         public int? OriginalDocumentId { get; set; }
+
+        public Accounting_System.Models.MasterFile.SubAccountType? SubAccountType { get; set; }
+
+        public int? SubAccountId { get; set; }
+
+        [Column(TypeName = "varchar(200)")]
+        public string? SubAccountName { get; set; }
     }
 }

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 namespace Accounting_System.Models.ViewModels
 {
     public class SalesInvoiceUploadExcelFileViewModel
@@ -27,5 +28,11 @@ namespace Accounting_System.Models.ViewModels
         public int OriginalProductId { get; set; }
         public string OriginalSeriesNumber { get; set; }
         public int OriginalDocumentId { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwtPercent { get; set; } = 0.01m;
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwVatPercent { get; set; } = 0.05m;
     }
 }

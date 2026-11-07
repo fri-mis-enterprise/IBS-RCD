@@ -60,6 +60,53 @@ namespace Accounting_System.Repository
             }
         }
 
+        public async Task CalculateTaxAmountsAsync(DebitMemo model, CancellationToken cancellationToken = default)
+        {
+            if (model.SalesInvoiceId.HasValue == model.ServiceInvoiceId.HasValue)
+            {
+                throw new ArgumentException("Select exactly one sales or service invoice.");
+            }
+
+            if (model.SalesInvoiceId.HasValue)
+            {
+                var salesInvoice = await _dbContext.SalesInvoices
+                    .Include(invoice => invoice.Customer)
+                    .FirstOrDefaultAsync(invoice => invoice.SalesInvoiceId == model.SalesInvoiceId, cancellationToken)
+                    ?? throw new ArgumentException("Sales invoice not found.");
+                var vatType = salesInvoice.Customer?.VatType?.Trim().Replace(" ", "-", StringComparison.Ordinal);
+                var hasEwt = salesInvoice.Customer?.WithHoldingTax ?? false;
+                var hasWvat = salesInvoice.Customer?.WithHoldingVat ?? false;
+                var netOfVatAmount = vatType == CS.VatType_Vatable
+                    ? (model.DebitAmount != 0m ? _generalRepo.ComputeNetOfVat(model.DebitAmount) : 0m)
+                    : Math.Round(model.DebitAmount, 4, MidpointRounding.AwayFromZero);
+
+                model.CwtAmount = hasEwt && netOfVatAmount != 0m && salesInvoice.CwtPercent > 0m
+                    ? _generalRepo.ComputeEwtAmount(netOfVatAmount, salesInvoice.CwtPercent)
+                    : 0m;
+                model.CwVatAmount = hasWvat && netOfVatAmount != 0m && salesInvoice.CwVatPercent > 0m
+                    ? _generalRepo.ComputeEwtAmount(netOfVatAmount, salesInvoice.CwVatPercent)
+                    : 0m;
+                return;
+            }
+
+            var serviceInvoice = await _dbContext.ServiceInvoices
+                .Include(invoice => invoice.Customer)
+                .FirstOrDefaultAsync(invoice => invoice.ServiceInvoiceId == model.ServiceInvoiceId, cancellationToken)
+                ?? throw new ArgumentException("Service invoice not found.");
+            var rawServiceVatType = string.IsNullOrWhiteSpace(serviceInvoice.VatType) ? serviceInvoice.Customer?.VatType : serviceInvoice.VatType;
+            var serviceVatType = rawServiceVatType?.Trim().Replace(" ", "-", StringComparison.Ordinal) ?? string.Empty;
+            var serviceNetOfVatAmount = serviceVatType == CS.VatType_Vatable
+                ? (model.DebitAmount != 0m ? _generalRepo.ComputeNetOfVat(model.DebitAmount) : 0m)
+                : Math.Round(model.DebitAmount, 4, MidpointRounding.AwayFromZero);
+
+            model.CwtAmount = serviceInvoice.HasEwt && serviceNetOfVatAmount != 0m && serviceInvoice.ServicePercent > 0m
+                ? _generalRepo.ComputeEwtAmount(serviceNetOfVatAmount, serviceInvoice.ServicePercent / 100m)
+                : 0m;
+            model.CwVatAmount = serviceInvoice.HasWvat && serviceNetOfVatAmount != 0m
+                ? _generalRepo.ComputeEwtAmount(serviceNetOfVatAmount, 0.05m)
+                : 0m;
+        }
+
         public async Task<DebitMemo> FindDM(int id, CancellationToken cancellationToken = default)
         {
             var debitMemo = await _dbContext
@@ -482,7 +529,7 @@ namespace Accounting_System.Repository
 
             viewModelDmcm.Period = DateOnly.FromDateTime(row.CreatedDate) >= row.Period ? DateOnly.FromDateTime(row.CreatedDate) : row.Period.AddMonths(1).AddDays(-1);
 
-            if (customer.CustomerType == "Vatable")
+            if (customer.VatType == "Vatable")
             {
                 viewModelDmcm.Total = row.Amount;
                 viewModelDmcm.NetAmount = _generalRepo.ComputeNetOfVat(viewModelDmcm.Total);
@@ -490,7 +537,7 @@ namespace Accounting_System.Repository
                 viewModelDmcm.WithholdingTaxAmount = viewModelDmcm.NetAmount * (customer.WithHoldingTax ? service.Percent / 100m : 0);
                 if (customer.WithHoldingVat)
                 {
-                    viewModelDmcm.WithholdingVatAmount = viewModelDmcm.NetAmount * 0.05m;
+                    viewModelDmcm.WithholdingVatAmount = viewModelDmcm.NetAmount * customer.CwVatPercent;
                 }
             }
             else
@@ -499,7 +546,7 @@ namespace Accounting_System.Repository
                 viewModelDmcm.WithholdingTaxAmount = viewModelDmcm.NetAmount * (customer.WithHoldingTax ? service.Percent / 100m : 0);
                 if (customer.WithHoldingVat)
                 {
-                    viewModelDmcm.WithholdingVatAmount = viewModelDmcm.NetAmount * 0.05m;
+                    viewModelDmcm.WithholdingVatAmount = viewModelDmcm.NetAmount * customer.CwVatPercent;
                 }
             }
 
@@ -526,7 +573,7 @@ namespace Accounting_System.Repository
                 var product = salesInvoice.Product!;
                 var sales = new SalesBook();
 
-                if (customer.CustomerType == "Vatable")
+                if (customer.VatType == "Vatable")
                 {
                     sales.TransactionDate = row.TransactionDate;
                     sales.SerialNo = row.DebitMemoNo;
@@ -543,7 +590,7 @@ namespace Accounting_System.Repository
                     sales.DueDate = salesInvoice.DueDate;
                     sales.DocumentId = salesInvoice.SalesInvoiceId;
                 }
-                else if (customer.CustomerType == "Exempt")
+                else if (customer.VatType == "Exempt")
                 {
                     sales.TransactionDate = row.TransactionDate;
                     sales.SerialNo = row.DebitMemoNo;
@@ -586,7 +633,7 @@ namespace Accounting_System.Repository
                 var viewModelDmcm = ComputeSvComputation(row, customer, service);
                 var sales = new SalesBook();
 
-                if (customer.CustomerType == "Vatable")
+                if (customer.VatType == "Vatable")
                 {
                     sales.TransactionDate = viewModelDmcm.Period;
                     sales.SerialNo = row.DebitMemoNo;
@@ -603,7 +650,7 @@ namespace Accounting_System.Repository
                     sales.DueDate = serviceInvoice.DueDate;
                     sales.DocumentId = serviceInvoice.ServiceInvoiceId;
                 }
-                else if (customer.CustomerType == "Exempt")
+                else if (customer.VatType == "Exempt")
                 {
                     sales.TransactionDate = viewModelDmcm.Period;
                     sales.SerialNo = row.DebitMemoNo;
@@ -672,7 +719,7 @@ namespace Accounting_System.Repository
                 decimal withHoldingVatAmount = 0;
                 decimal netOfVatAmount;
                 decimal vatAmount = 0;
-                if (customer.CustomerType == CS.VatType_Vatable)
+                if (customer.VatType == CS.VatType_Vatable)
                 {
                     netOfVatAmount = _generalRepo.ComputeNetOfVat(row.DebitAmount);
                     vatAmount = _generalRepo.ComputeVatAmount(netOfVatAmount);
@@ -683,11 +730,11 @@ namespace Accounting_System.Repository
                 }
                 if (customer.WithHoldingTax)
                 {
-                    withHoldingTaxAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m);
+                    withHoldingTaxAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, salesInvoice.CwtPercent);
                 }
                 if (customer.WithHoldingVat)
                 {
-                    withHoldingVatAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.05m);
+                    withHoldingVatAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, salesInvoice.CwVatPercent);
                 }
 
                 var ledgers = new List<GeneralLedgerBook>

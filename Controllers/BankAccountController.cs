@@ -58,7 +58,7 @@ namespace Accounting_System.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            return View();
+            return View(new BankAccount());
         }
 
         [HttpPost]
@@ -132,6 +132,9 @@ namespace Accounting_System.Controllers
                 {
                     existingModel.AccountName = model.AccountName;
                     existingModel.Bank = model.Bank;
+                    existingModel.Branch = model.Branch;
+                    existingModel.AccountNo = model.AccountNo;
+                    existingModel.IsActive = model.IsActive;
 
                     if (_dbContext.ChangeTracker.HasChanges())
                     {
@@ -225,16 +228,24 @@ namespace Accounting_System.Controllers
                 worksheet.Cells["F1"].Value = "Bank";
                 worksheet.Cells["G1"].Value = "OriginalBankId";
 
+                var addedHeaders = new[] { "IsActive" };
+                var addedStartColumn = worksheet.Dimension.Columns + 1;
+                for (var c = 0; c < addedHeaders.Length; c++) worksheet.Cells[1, addedStartColumn + c].Value = addedHeaders[c];
+
                 int row = 2;
 
                 foreach (var item in selectedList)
                 {
+                    worksheet.Cells[row, 1].Value = item.Branch;
+                    worksheet.Cells[row, 5].Value = item.AccountNo;
                     worksheet.Cells[row, 2].Value = item.CreatedBy;
                     worksheet.Cells[row, 3].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 4].Value = item.AccountName;
                     worksheet.Cells[row, 6].Value = item.Bank;
                     worksheet.Cells[row, 7].Value = item.BankAccountId;
 
+                    object?[] addedValues = [item.IsActive];
+                    for (var c = 0; c < addedValues.Length; c++) worksheet.Cells[row, addedStartColumn + c].Value = addedValues[c];
                     row++;
                 }
 

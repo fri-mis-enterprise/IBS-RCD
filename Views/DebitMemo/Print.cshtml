@@ -1,4 +1,4 @@
-﻿@using Accounting_System.Models.AccountsReceivable
+@using Accounting_System.Models.AccountsReceivable
 @using Accounting_System.Utility
 @model DebitMemo
 @using Microsoft.AspNetCore.Identity
@@ -6,8 +6,21 @@
 
 @{
     ViewData["Title"] = "Print Debit Memo";
-    decimal netOfVatAmount = Model.DebitAmount / 1.12m;
-    decimal vatAmount = netOfVatAmount * 0.12m;
+    var customerType = (Model.SalesInvoice?.Customer?.CustomerType ?? Model.ServiceInvoice?.Customer?.CustomerType);
+    var rawVatType = Model.SalesInvoice?.Customer?.VatType;
+    if (string.IsNullOrWhiteSpace(rawVatType)) rawVatType = Model.ServiceInvoice?.VatType;
+    if (string.IsNullOrWhiteSpace(rawVatType)) rawVatType = Model.ServiceInvoice?.Customer?.VatType;
+    var vatType = rawVatType?.Trim().Replace(" ", "-", StringComparison.Ordinal) ?? string.Empty;
+    var decimalFormat = customerType != "Government" ? CS.Two_Decimal_Format : CS.Four_Decimal_Format;
+    var grossAmount = Model.DebitAmount;
+    var vatableSales = vatType == CS.VatType_Vatable ? grossAmount / 1.12m : 0m;
+    var zeroRatedSales = vatType == CS.VatType_ZeroRated ? grossAmount : 0m;
+    var exemptSales = vatType == CS.VatType_Exempt ? grossAmount : 0m;
+    var discount = 0m;
+    var vatAmount = vatType == CS.VatType_Vatable ? vatableSales * 0.12m : 0m;
+    var ewtAmount = Model.CwtAmount;
+    var wvatAmount = Model.CwVatAmount;
+    var amountDue = grossAmount - discount;
 }
 <br />
 <div class="text-end">
@@ -64,7 +77,7 @@
         </table>
     </div>
     <div class="table-responsive" style="margin-top:20px;">
-        <table class="table-bordered w-100 text-center">
+        <table class="table-bordered document-grid w-100 text-center">
             <thead class="text-nowrap">
                 <tr>
                     <th>INVOICE NO.</th>
@@ -80,7 +93,7 @@
                     <td>@Model.SalesInvoice!.TransactionDate.ToString("MM/dd/yyyy")</td>
                     <td>@Html.DisplayFor(model => model.SalesInvoice!.Product!.ProductName)</td>
                     <td><p style="margin: 0; padding: 0;">@Html.DisplayFor(model => model.Description)</p></td>
-                    <td>@Html.DisplayFor(model => model.DebitAmount)</td>
+                    <td>@Model.DebitAmount.ToString(decimalFormat)</td>
                 </tr>
             </tbody>
         </table>
@@ -93,50 +106,39 @@
                     </td>
                     <td style="width:40%;">
                         <div>
-                            <table class="w-100">
+                            <table class="w-100 document-grid">
                                 <tbody class="text-nowrap">
                                     <tr>
-                                        <td><p style="height: 9px; margin-left:8%;"><b>Vatable Sales: </b></p></td>
-                                        <td class="text-end">
-                                            @if (Model.SalesInvoice.Customer!.CustomerType == "Vatable")
-                                            {
-                                                <p style="height: 9px;">@Html.DisplayFor(model => netOfVatAmount)</p>
-                                            }
-                                        </td>
+                                        <td><p style="height: 9px; margin-left:8%;"><b>VATable Sales: </b></p></td>
+                                        <td class="text-end">@vatableSales.ToString(decimalFormat)</td>
                                     </tr>
                                     <tr>
                                         <td><p style="height: 9px; margin-left:8%;"><b>Zero-Rated Sales: </b></p></td>
-
-                                        <td class="text-end">
-                                            @if (Model.SalesInvoice.Customer.CustomerType == "Zero Rated")
-                                            {
-                                                <p style="height: 9px;">@Html.DisplayFor(model => model.DebitAmount)</p>
-                                            }
-                                        </td>
+                                        <td class="text-end">@zeroRatedSales.ToString(decimalFormat)</td>
                                     </tr>
                                     <tr>
                                         <td><p style="height: 9px; margin-left:8%;"><b>VAT-Exempt Sales: </b></p></td>
-
-                                        <td class="text-end">
-                                            @if (Model.SalesInvoice.Customer.CustomerType == "Exempt")
-                                            {
-                                                <p style="height: 9px;">@Html.DisplayFor(model => model.DebitAmount)</p>
-                                            }
-                                        </td>
+                                        <td class="text-end">@exemptSales.ToString(decimalFormat)</td>
                                     </tr>
                                     <tr>
-                                        <td><p style="height: 9px; margin-left:8%;"><b>VAT Amount: </b></p></td>
-
-                                        <td class="text-end">
-                                            @if (Model.SalesInvoice.Customer.CustomerType == "Vatable")
-                                            {
-                                                <p style="height: 9px;">@Html.DisplayFor(model => vatAmount)</p>
-                                            }
-                                        </td>
+                                        <td><p style="height: 9px; margin-left:8%;"><b>Less Discount: </b></p></td>
+                                        <td class="text-end">@discount.ToString(decimalFormat)</td>
                                     </tr>
                                     <tr>
-                                        <td><p style="height: 9px; margin-left:8%;"><b>TOTAL SALES: </b></p></td>
-                                        <td class="text-end"><p style="height: 9px;">@Html.DisplayFor(model => model.DebitAmount)</p></td>
+                                        <td><p style="height: 9px; margin-left:8%;"><b>Add VAT Amount: </b></p></td>
+                                        <td class="text-end">@vatAmount.ToString(decimalFormat)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><p style="height: 9px; margin-left:8%;"><b>Less Withholding Tax: </b></p></td>
+                                        <td class="text-end">@ewtAmount.ToString(decimalFormat)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><p style="height: 9px; margin-left:8%;"><b>Less Withholding VAT: </b></p></td>
+                                        <td class="text-end">@wvatAmount.ToString(decimalFormat)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><p style="height: 9px; margin-left:8%;"><b>Total Amount Due: </b></p></td>
+                                        <td class="text-end"><p style="height: 9px;">@amountDue.ToString(decimalFormat)</p></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -171,7 +173,7 @@ else if (Model.Source == "Service Invoice")
         </table>
     </div>
     <div class="table-responsive" style="margin-top:20px;">
-        <table class="table-bordered w-100 text-center">
+        <table class="table-bordered document-grid w-100 text-center">
             <thead>
                 <tr>
                     <th>INVOICE NO.</th>
@@ -193,7 +195,7 @@ else if (Model.Source == "Service Invoice")
                     <td>@Html.DisplayFor(model => model.Description)</td>
                     <td class="pt-2">
                         <p style="line-height:15px">
-                            @Html.DisplayFor(model => model.Amount)
+                            @(Model.Amount ?? 0).ToString(decimalFormat)
                         </p>
                     </td>
                 </tr>
@@ -208,59 +210,39 @@ else if (Model.Source == "Service Invoice")
                     </td>
                     <td style="width:40%;">
                         <div>
-                            <table class="w-100">
+                            <table class="w-100 document-grid">
                                 <tbody class="text-nowrap">
                                     <tr>
-                                        <td class="w-50"><p style="height: 9px; margin-left:8%;"><b>Vatable Sales: </b></p></td>
-                                        @if (netOfVatAmount != 0)
-                                        {
-                                            <td class="text-end">@Html.DisplayFor(model => netOfVatAmount)</td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-end"></td>
-                                        }
-
+                                        <td><p style="height: 9px; margin-left:8%;"><b>VATable Sales: </b></p></td>
+                                        <td class="text-end">@vatableSales.ToString(decimalFormat)</td>
                                     </tr>
                                     <tr>
                                         <td><p style="height: 9px; margin-left:8%;"><b>Zero-Rated Sales: </b></p></td>
-                                        @if (Model.ServiceInvoice!.Customer!.CustomerType == "Zero Rated")
-                                        {
-                                            <td class="text-end">@Html.DisplayFor(model => model.DebitAmount)</td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-end"></td>
-                                        }
-
+                                        <td class="text-end">@zeroRatedSales.ToString(decimalFormat)</td>
                                     </tr>
                                     <tr>
                                         <td><p style="height: 9px; margin-left:8%;"><b>VAT-Exempt Sales: </b></p></td>
-
-                                        @if (Model.ServiceInvoice.Customer.CustomerType == "Exempt")
-                                        {
-                                            <td class="text-end">@Html.DisplayFor(model => model.DebitAmount)</td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-end"></td>
-                                        }
+                                        <td class="text-end">@exemptSales.ToString(decimalFormat)</td>
                                     </tr>
                                     <tr>
-                                        <td><p style="height: 9px; margin-left:8%;"><b>VAT Amount: </b></p></td>
-
-                                        @if (vatAmount != 0)
-                                        {
-                                            <td class="text-end">@Html.DisplayFor(model => vatAmount)</td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-end"></td>
-                                        }
+                                        <td><p style="height: 9px; margin-left:8%;"><b>Less Discount: </b></p></td>
+                                        <td class="text-end">@discount.ToString(decimalFormat)</td>
                                     </tr>
                                     <tr>
-                                        <td><p style="height: 9px; margin-left:8%;"><b>TOTAL SALES: </b></p></td>
-                                        <td class="text-end">@Html.DisplayFor(model => model.DebitAmount)</td>
+                                        <td><p style="height: 9px; margin-left:8%;"><b>Add VAT Amount: </b></p></td>
+                                        <td class="text-end">@vatAmount.ToString(decimalFormat)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><p style="height: 9px; margin-left:8%;"><b>Less Withholding Tax: </b></p></td>
+                                        <td class="text-end">@ewtAmount.ToString(decimalFormat)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><p style="height: 9px; margin-left:8%;"><b>Less Withholding VAT: </b></p></td>
+                                        <td class="text-end">@wvatAmount.ToString(decimalFormat)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><p style="height: 9px; margin-left:8%;"><b>Total Amount Due: </b></p></td>
+                                        <td class="text-end"><p style="height: 9px;">@amountDue.ToString(decimalFormat)</p></td>
                                     </tr>
                                 </tbody>
                             </table>

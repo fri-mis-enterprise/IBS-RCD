@@ -768,7 +768,7 @@ namespace Accounting_System.Repository
                 if (sheet.IsEmpty(row)) continue;
                 rows.Add(new CheckVoucherDetailsUploadExcelFileViewModel
                 {
-                    SuppliedOptionalFields = new[] { "Amount", "AmountPaid", "SupplierId", "EwtPercent", "IsUserSelected", "IsVatable" }
+                    SuppliedOptionalFields = new[] { "Amount", "AmountPaid", "SupplierId", "EwtPercent", "IsUserSelected", "IsVatable", "IsDisplayEntry", "SubAccountType", "SubAccountId", "SubAccountName" }
                         .Where(sheet.HasColumn).ToHashSet(),
                     TransactionNo = sheet.HasColumn("TransactionNo") ? sheet.Text(row, "TransactionNo") : null,
                     AccountNo = sheet.Text(row, "AccountNo"),
@@ -782,7 +782,13 @@ namespace Accounting_System.Repository
                     SupplierId = sheet.OptionalValue<int>(row, "SupplierId"),
                     EwtPercent = sheet.OptionalValue<decimal>(row, "EwtPercent"),
                     IsUserSelected = sheet.OptionalValue<bool>(row, "IsUserSelected"),
-                    IsVatable = sheet.OptionalValue<bool>(row, "IsVatable")
+                    IsVatable = sheet.OptionalValue<bool>(row, "IsVatable"),
+                    IsDisplayEntry = sheet.OptionalValue<bool>(row, "IsDisplayEntry"),
+                    SubAccountType = sheet.HasColumn("SubAccountType") && !string.IsNullOrWhiteSpace(sheet.Text(row, "SubAccountType"))
+                        && Enum.TryParse<Accounting_System.Models.MasterFile.SubAccountType>(sheet.Text(row, "SubAccountType"), true, out var cvSubType) ? cvSubType : null,
+                    SubAccountId = sheet.HasColumn("SubAccountId") && !string.IsNullOrWhiteSpace(sheet.Text(row, "SubAccountId"))
+                        ? int.TryParse(sheet.Text(row, "SubAccountId"), out var cvSubId) ? cvSubId : null : null,
+                    SubAccountName = sheet.HasColumn("SubAccountName") ? sheet.Text(row, "SubAccountName") : null
                 });
             }
 
@@ -844,6 +850,10 @@ namespace Accounting_System.Repository
                 EwtPercent = Has("EwtPercent") ? row.EwtPercent : existing?.EwtPercent ?? default,
                 IsUserSelected = Has("IsUserSelected") ? row.IsUserSelected : existing?.IsUserSelected ?? default,
                 IsVatable = Has("IsVatable") ? row.IsVatable : existing?.IsVatable ?? default,
+                IsDisplayEntry = Has("IsDisplayEntry") ? row.IsDisplayEntry : existing?.IsDisplayEntry ?? default,
+                SubAccountType = Has("SubAccountType") ? row.SubAccountType : existing?.SubAccountType,
+                SubAccountId = Has("SubAccountId") ? row.SubAccountId : existing?.SubAccountId,
+                SubAccountName = Has("SubAccountName") ? row.SubAccountName : existing?.SubAccountName,
                 TransactionNo = checkVouchHeader!.CheckVoucherHeaderNo
             };
         }
@@ -898,6 +908,26 @@ namespace Accounting_System.Repository
                 _generalRepo.Compare(changes, logs, "IsVatable",
                 entity.IsVatable.ToString(),
                 row.IsVatable.ToString());
+
+            if (row.SuppliedOptionalFields?.Contains("IsDisplayEntry") != false)
+                _generalRepo.Compare(changes, logs, "IsDisplayEntry",
+                entity.IsDisplayEntry.ToString(),
+                row.IsDisplayEntry.ToString());
+
+            if (row.SuppliedOptionalFields?.Contains("SubAccountType") != false)
+                _generalRepo.Compare(changes, logs, "SubAccountType",
+                entity.SubAccountType?.ToString() ?? "null",
+                row.SubAccountType?.ToString() ?? "null");
+
+            if (row.SuppliedOptionalFields?.Contains("SubAccountId") != false)
+                _generalRepo.Compare(changes, logs, "SubAccountId",
+                entity.SubAccountId?.ToString() ?? "null",
+                row.SubAccountId?.ToString() ?? "null");
+
+            if (row.SuppliedOptionalFields?.Contains("SubAccountName") != false)
+                _generalRepo.Compare(changes, logs, "SubAccountName",
+                StringHelper.NormalizeString(entity.SubAccountName),
+                StringHelper.NormalizeString(row.SubAccountName));
 
             if (row.SuppliedOptionalFields?.Contains("SupplierId") != false)
                 _generalRepo.Compare(changes, logs, "SupplierId",
@@ -1032,7 +1062,7 @@ namespace Accounting_System.Repository
             var ledgers = new List<GeneralLedgerBook>();
             foreach (var details in modelDetails)
             {
-                var account = accountTitlesDto.Find(c => c.AccountNumber == details.AccountNo) ?? throw new ArgumentException($"Account title '{details.AccountNo}' not found.");
+                var account = accountTitlesDto.Find(c => c.AccountNumber == details.AccountNo) ?? throw new ArgumentException($"Account title '{details.AccountNo}' not found. The account is missing from RCD ChartOfAccounts, or is a parent/hidden account. Upload the ChartOfAccount master file to RCD first, then re-upload the voucher.");
                 ledgers.Add(
                         new GeneralLedgerBook
                         {

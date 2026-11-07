@@ -1,4 +1,4 @@
-﻿using Accounting_System.Data;
+using Accounting_System.Data;
 using Accounting_System.Models;
 using Accounting_System.Models.AccountsPayable;
 using Accounting_System.Models.Reports;
@@ -42,7 +42,7 @@ namespace Accounting_System.Controllers
         {
             BeginningInventoryViewModel viewModel = new()
             {
-                ProductList = await _dbContext.Products
+                ProductList = await _dbContext.Products.Where(x => x.IsActive)
                     .OrderBy(p => p.ProductCode)
                     .Select(p => new SelectListItem
                     {
@@ -67,7 +67,7 @@ namespace Accounting_System.Controllers
 
                     if (hasBeginningInventory)
                     {
-                        viewModel.ProductList = await _dbContext.Products
+                        viewModel.ProductList = await _dbContext.Products.Where(x => x.IsActive)
                             .OrderBy(p => p.ProductCode)
                             .Select(p => new SelectListItem
                             {
@@ -93,7 +93,7 @@ namespace Accounting_System.Controllers
                 }
             }
 
-            viewModel.ProductList = await _dbContext.Products
+            viewModel.ProductList = await _dbContext.Products.Where(x => x.IsActive)
                 .OrderBy(p => p.ProductCode)
                 .Select(p => new SelectListItem
                 {
@@ -190,7 +190,7 @@ namespace Accounting_System.Controllers
         {
             ActualInventoryViewModel viewModel = new()
             {
-                ProductList = await _dbContext.Products
+                ProductList = await _dbContext.Products.Where(x => x.IsActive)
                     .OrderBy(p => p.ProductCode)
                     .Select(p => new SelectListItem
                     {
@@ -246,7 +246,7 @@ namespace Accounting_System.Controllers
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync(cancellationToken);
-                    viewModel.ProductList = await _dbContext.Products
+                    viewModel.ProductList = await _dbContext.Products.Where(x => x.IsActive)
                         .OrderBy(p => p.ProductCode)
                         .Select(p => new SelectListItem
                         {
@@ -269,7 +269,7 @@ namespace Accounting_System.Controllers
                 }
             }
 
-            viewModel.ProductList = await _dbContext.Products
+            viewModel.ProductList = await _dbContext.Products.Where(x => x.IsActive)
                 .OrderBy(p => p.ProductCode)
                 .Select(p => new SelectListItem
                 {

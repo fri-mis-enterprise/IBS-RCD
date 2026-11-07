@@ -1,8 +1,9 @@
-﻿@model Accounting_System.Models.ChartOfAccount
+<link rel="stylesheet" href="~/css/form-style.css" asp-append-version="true" />
+@model Accounting_System.Models.ChartOfAccount
 
 @{
     ViewData["Title"] = "EDIT CHART OF ACCOUNT";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+
 }
 <div class="loader-container">
     <div class="loader"></div>
@@ -17,7 +18,7 @@
         </div>
     </div>
     <div class="card-body p-4">
-        <form asp-action="Edit">
+        <form asp-action="Edit" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group form-check mb-3">
                 <label class="form-check-label">
@@ -26,32 +27,34 @@
             </div>
             <div class="form-group mb-3">
                 <label asp-for="AccountNumber" class="control-label"></label>
-                <input asp-for="AccountNumber" class="form-control" />
+                <input asp-for="AccountNumber" class="form-control border-0 shadow" />
                 <span asp-validation-for="AccountNumber" class="text-danger"></span>
             </div>
             <div class="form-group mb-3">
                 <label asp-for="AccountName" class="control-label"></label>
-                <input asp-for="AccountName" class="form-control" />
+                <input asp-for="AccountName" class="form-control border-0 shadow" />
                 <span asp-validation-for="AccountName" class="text-danger"></span>
             </div>
             <div class="form-group mb-3">
                 <label asp-for="AccountType" class="control-label"></label>
-                <input asp-for="AccountType" class="form-control" />
+                <input asp-for="AccountType" class="form-control border-0 shadow" />
                 <span asp-validation-for="AccountType" class="text-danger"></span>
             </div>
             <div class="form-group mb-3">
                 <label asp-for="NormalBalance" class="control-label"></label>
-                <input asp-for="NormalBalance" class="form-control" />
+                <input asp-for="NormalBalance" class="form-control border-0 shadow" />
                 <span asp-validation-for="NormalBalance" class="text-danger"></span>
             </div>
             <div class="form-group mb-3">
                 <label asp-for="Level" class="control-label"></label>
-                <input asp-for="Level" class="form-control" />
+                <input asp-for="Level" class="form-control border-0 shadow" />
                 <span asp-validation-for="Level" class="text-danger"></span>
             </div>
             <input type="hidden" asp-for="AccountId" />
-            <input asp-for="CreatedBy" type="hidden" class="form-control" />
-            <input asp-for="CreatedDate" type="hidden" class="form-control" />
+            <input asp-for="CreatedBy" type="hidden" class="form-control border-0 shadow" />
+            <input asp-for="CreatedDate" type="hidden" class="form-control border-0 shadow" />
+                        <div class="form-check mb-3"><input asp-for="IsHidden" class="form-check-input" /><label asp-for="IsHidden" class="form-check-label"></label></div>
+            <div class="mb-3"><label asp-for="FinancialStatementType"></label><select asp-for="FinancialStatementType" class="form-select border-0 shadow"><option value="">Select statement type</option><option value="BalanceSheet">Balance Sheet</option><option value="PnL">Profit and Loss</option></select><span asp-validation-for="FinancialStatementType" class="text-danger"></span></div>
             <div class="row pt-2">
                 <div class="col-6 col-md-3">
                     <button type="submit" class="btn btn-primary form-control">Save</button>

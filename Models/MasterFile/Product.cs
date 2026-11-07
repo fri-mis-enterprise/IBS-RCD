@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Accounting_System.Models.MasterFile
@@ -25,5 +25,15 @@ namespace Accounting_System.Models.MasterFile
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
         public int OriginalProductId { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        [Display(Name = "Edited By")]
+        [Column(TypeName = "varchar(50)")]
+        public string? EditedBy { get; set; }
+
+        [Display(Name = "Edited Date")]
+        [Column(TypeName = "timestamp without time zone")]
+        public DateTime? EditedDate { get; set; }
     }
 }

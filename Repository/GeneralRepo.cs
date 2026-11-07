@@ -1,4 +1,4 @@
-﻿using Accounting_System.Data;
+using Accounting_System.Data;
 using Accounting_System.Utility;
 using System.Globalization;
 using Accounting_System.Models.Reports;
@@ -63,7 +63,7 @@ namespace Accounting_System.Repository
 
         public async Task<List<SelectListItem>> GetSupplierListAsync(CancellationToken cancellationToken = default)
         {
-            return await _dbContext.Suppliers
+            return await _dbContext.Suppliers.Where(x => x.IsActive)
                 .Select(supp => new SelectListItem
                 {
                     Value = supp.SupplierId.ToString(),
@@ -106,11 +106,11 @@ namespace Accounting_System.Repository
 
         public async Task<List<SelectListItem>> GetBankAccountListAsync(CancellationToken cancellationToken = default)
         {
-            return await _dbContext.BankAccounts
+            return await _dbContext.BankAccounts.Where(x => x.IsActive)
                 .Select(ba => new SelectListItem
                 {
                     Value = ba.BankAccountId.ToString(),
-                    Text = ba.AccountName
+                    Text = ba.Bank + " " + ba.AccountNo + " " + ba.AccountName
                 })
                 .ToListAsync(cancellationToken);
         }
@@ -118,7 +118,7 @@ namespace Accounting_System.Repository
         public async Task<List<SelectListItem>> GetCOAListAsync(CancellationToken cancellationToken = default)
         {
             return await _dbContext.ChartOfAccounts
-                .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber!.Contains(excludedNumber)) && !coa.HasChildren)
+                .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber!.Contains(excludedNumber)) && !coa.HasChildren && !coa.IsHidden)
                 .Select(s => new SelectListItem
                 {
                     Value = s.AccountNumber,
@@ -180,7 +180,7 @@ namespace Accounting_System.Repository
         public async Task<List<AccountTitleDto>> GetListOfAccountTitleDto(CancellationToken cancellationToken = default)
         {
             return await _dbContext.ChartOfAccounts
-                .Where(coa => !coa.HasChildren)
+                .Where(coa => !coa.HasChildren && !coa.IsHidden)
                 .Select(coa => new AccountTitleDto
                 {
                     AccountId = coa.AccountId,

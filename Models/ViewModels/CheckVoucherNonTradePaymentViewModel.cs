@@ -5,6 +5,7 @@ namespace Accounting_System.Models.ViewModels
 {
     public class CheckVoucherNonTradePaymentViewModel
     {
+        public CheckVoucherDocumentationViewModel Documentation { get; set; } = new();
         public List<SelectListItem>? CheckVouchers { get; set; }
 
         [Required(ErrorMessage = "The CV No is required.")]
@@ -56,7 +57,6 @@ namespace Accounting_System.Models.ViewModels
 
         public decimal[] Credit { get; set; }
 
-        public string? Type { get; set; }
 
         public int? MultipleSupplierId { get; set; }
 

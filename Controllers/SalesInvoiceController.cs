@@ -137,7 +137,7 @@ namespace Accounting_System.Controllers
         {
             var viewModel = new SalesInvoice
             {
-                Customers = await _dbContext.Customers
+                Customers = await _dbContext.Customers.Where(x => x.IsActive)
                     .OrderBy(c => c.CustomerId)
                     .Select(c => new SelectListItem
                     {
@@ -145,7 +145,7 @@ namespace Accounting_System.Controllers
                         Text = c.CustomerName
                     })
                     .ToListAsync(cancellationToken),
-                Products = await _dbContext.Products
+                Products = await _dbContext.Products.Where(x => x.IsActive)
                     .OrderBy(p => p.ProductId)
                     .Select(p => new SelectListItem
                     {
@@ -162,7 +162,7 @@ namespace Accounting_System.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(SalesInvoice sales, CancellationToken cancellationToken)
         {
-            sales.Customers = await _dbContext.Customers
+            sales.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                 .OrderBy(c => c.CustomerId)
                 .Select(c => new SelectListItem
                 {
@@ -170,7 +170,7 @@ namespace Accounting_System.Controllers
                     Text = c.CustomerName
                 })
                 .ToListAsync(cancellationToken);
-            sales.Products = await _dbContext.Products
+            sales.Products = await _dbContext.Products.Where(x => x.IsActive)
                 .OrderBy(p => p.ProductCode)
                 .Select(p => new SelectListItem
                 {
@@ -211,6 +211,8 @@ namespace Accounting_System.Controllers
                     var existingCustomers = await _dbContext.Customers
                                                    .FirstOrDefaultAsync(si => si.CustomerId == sales.CustomerId, cancellationToken);
 
+                    sales.CwtPercent = existingCustomers!.CwtPercent;
+                    sales.CwVatPercent = existingCustomers.CwVatPercent;
                     sales.CreatedBy = createdBy;
                     sales.SalesInvoiceNo = generateSiNo;
                     sales.Amount = sales.Quantity * sales.UnitPrice;
@@ -235,6 +237,8 @@ namespace Accounting_System.Controllers
                     }
 
                     #endregion --Audit Trail Recording
+
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
 
                     await _dbContext.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
@@ -269,7 +273,7 @@ namespace Accounting_System.Controllers
                     TinNo = customer.CustomerTin,
                     customer.BusinessStyle,
                     Terms = customer.CustomerTerms,
-                    customer.CustomerType,
+                    CustomerType = customer.CustomerType,
                     customer.WithHoldingTax
                 });
             }
@@ -296,7 +300,7 @@ namespace Accounting_System.Controllers
             try
             {
                 var salesInvoice = await _salesInvoiceRepo.FindSalesInvoice(id, cancellationToken);
-                salesInvoice.Customers = await _dbContext.Customers
+                salesInvoice.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                 .OrderBy(c => c.CustomerId)
                 .Select(c => new SelectListItem
                 {
@@ -304,7 +308,7 @@ namespace Accounting_System.Controllers
                     Text = c.CustomerName
                 })
                 .ToListAsync(cancellationToken);
-                salesInvoice.Products = await _dbContext.Products
+                salesInvoice.Products = await _dbContext.Products.Where(x => x.IsActive)
                 .OrderBy(p => p.ProductId)
                 .Select(p => new SelectListItem
                 {
@@ -336,6 +340,12 @@ namespace Accounting_System.Controllers
                 {
                     #region -- Saving Default Enries --
 
+                    if (existingModel.CustomerId != model.CustomerId)
+                    {
+                        var selectedCustomer = await _dbContext.Customers.FirstAsync(c => c.CustomerId == model.CustomerId, cancellationToken);
+                        existingModel.CwtPercent = selectedCustomer.CwtPercent;
+                        existingModel.CwVatPercent = selectedCustomer.CwVatPercent;
+                    }
                     existingModel.CustomerId = model.CustomerId;
                     existingModel.TransactionDate = model.TransactionDate;
                     existingModel.OtherRefNo = model.OtherRefNo;
@@ -362,7 +372,7 @@ namespace Accounting_System.Controllers
                     }
                     else
                     {
-                        existingModel.Customers = await _dbContext.Customers
+                        existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                             .OrderBy(c => c.CustomerId)
                             .Select(c => new SelectListItem
                             {
@@ -370,7 +380,7 @@ namespace Accounting_System.Controllers
                                 Text = c.CustomerName
                             })
                             .ToListAsync(cancellationToken);
-                        existingModel.Products = await _dbContext.Products
+                        existingModel.Products = await _dbContext.Products.Where(x => x.IsActive)
                             .OrderBy(p => p.ProductId)
                             .Select(p => new SelectListItem
                             {
@@ -385,6 +395,7 @@ namespace Accounting_System.Controllers
                     if (_dbContext.ChangeTracker.HasChanges())
                     {
                         // Save the changes to the database
+                        await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
                         await _dbContext.SaveChangesAsync(cancellationToken);
                         await transaction.CommitAsync(cancellationToken);
                         TempData["success"] = "Sales Invoice updated successfully";
@@ -398,7 +409,7 @@ namespace Accounting_System.Controllers
                     #endregion -- Saving Default Enries --
                 }
 
-                existingModel.Customers = await _dbContext.Customers
+                existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                     .OrderBy(c => c.CustomerId)
                     .Select(c => new SelectListItem
                     {
@@ -406,7 +417,7 @@ namespace Accounting_System.Controllers
                         Text = c.CustomerName
                     })
                     .ToListAsync(cancellationToken);
-                existingModel.Products = await _dbContext.Products
+                existingModel.Products = await _dbContext.Products.Where(x => x.IsActive)
                     .OrderBy(p => p.ProductId)
                     .Select(p => new SelectListItem
                     {
@@ -420,7 +431,7 @@ namespace Accounting_System.Controllers
             }
             catch (Exception ex)
             {
-                existingModel.Customers = await _dbContext.Customers
+                existingModel.Customers = await _dbContext.Customers.Where(x => x.IsActive)
                     .OrderBy(c => c.CustomerId)
                     .Select(c => new SelectListItem
                     {
@@ -428,7 +439,7 @@ namespace Accounting_System.Controllers
                         Text = c.CustomerName
                     })
                     .ToListAsync(cancellationToken);
-                existingModel.Products = await _dbContext.Products
+                existingModel.Products = await _dbContext.Products.Where(x => x.IsActive)
                     .OrderBy(p => p.ProductId)
                     .Select(p => new SelectListItem
                     {
@@ -502,7 +513,7 @@ namespace Accounting_System.Controllers
                         Amount = model.Amount - model.Discount
                     };
 
-                    switch (model.Customer.CustomerType)
+                    switch (model.Customer.VatType)
                     {
                         case CS.VatType_Vatable:
                             salesBook.VatableSales = _generalRepo.ComputeNetOfVat(salesBook.Amount);
@@ -533,10 +544,10 @@ namespace Accounting_System.Controllers
                     #region --General Ledger Book Recording
 
                     decimal netDiscount = model.Amount - model.Discount;
-                    decimal netOfVatAmount = model.Customer.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(netDiscount) : netDiscount;
-                    decimal vatAmount = model.Customer.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeVatAmount(netOfVatAmount) : 0;
-                    decimal withHoldingTaxAmount = model.Customer.WithHoldingTax ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m) : 0;
-                    decimal withHoldingVatAmount = model.Customer.WithHoldingVat ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.05m) : 0;
+                    decimal netOfVatAmount = model.Customer.VatType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(netDiscount) : netDiscount;
+                    decimal vatAmount = model.Customer.VatType == CS.VatType_Vatable ? _generalRepo.ComputeVatAmount(netOfVatAmount) : 0;
+                    decimal withHoldingTaxAmount = model.Customer.WithHoldingTax ? _generalRepo.ComputeEwtAmount(netOfVatAmount, model.CwtPercent) : 0;
+                    decimal withHoldingVatAmount = model.Customer.WithHoldingVat ? _generalRepo.ComputeEwtAmount(netOfVatAmount, model.CwVatPercent) : 0;
 
                     var accountTitlesDto = await _generalRepo.GetListOfAccountTitleDto(cancellationToken);
                     var arTradeReceivableTitle = accountTitlesDto.Find(c => c.AccountNumber == "101020100") ?? throw new ArgumentException("Account number: '101020100', Account title: 'AR-Trade Receivable' not found.");
@@ -888,6 +899,9 @@ namespace Accounting_System.Controllers
                 worksheet.Cells["AC1"].Value = "VoidedBy";
                 worksheet.Cells["AD1"].Value = "VoidedDate";
 
+                var rateColumn = worksheet.Dimension.Columns + 1;
+                worksheet.Cells[1, rateColumn].Value = "CwtPercent";
+                worksheet.Cells[1, rateColumn + 1].Value = "CwVatPercent";
                 int row = 2;
 
                 foreach (var item in selectedList)
@@ -921,6 +935,8 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[row, 29].Value = item.VoidedBy;
                     worksheet.Cells[row, 30].Value = item.VoidedDate?.ToString(CS.ImportDateTimeFormat);
 
+                    worksheet.Cells[row, rateColumn].Value = item.CwtPercent;
+                    worksheet.Cells[row, rateColumn + 1].Value = item.CwVatPercent;
                     row++;
                 }
 
@@ -933,15 +949,16 @@ namespace Accounting_System.Controllers
                 for (var index = 0; index < selectedList.Count; index++)
                 {
                     var invoice = selectedList[index];
-                    var net = invoice.Customer?.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(invoice.Amount) : invoice.Amount;
+                    var net = invoice.Customer?.VatType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(invoice.Amount) : invoice.Amount;
                     worksheet.Cells[index + 2, 5].Value = net;
                     worksheet.Cells[index + 2, 6].Value = invoice.Amount - net;
-                    worksheet.Cells[index + 2, 7].Value = invoice.Customer?.WithHoldingTax == true ? _generalRepo.ComputeEwtAmount(net, 0.01m) : 0m;
-                    worksheet.Cells[index + 2, 34].Value = invoice.Customer?.CustomerType;
+                    worksheet.Cells[index + 2, 7].Value = invoice.Customer?.WithHoldingTax == true ? _generalRepo.ComputeEwtAmount(net, invoice.CwtPercent) : 0m;
+                    worksheet.Cells[index + 2, 34].Value = invoice.Customer?.VatType;
                     worksheet.Cells[index + 2, 35].Value = invoice.Customer?.CustomerName;
                 }
 
                 // Convert the Excel package to a byte array
+                TransactionColumns.Export(worksheet, selectedList);
                 var excelBytes = await package.GetAsByteArrayAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"SalesInvoiceList_IBS-RCD_{DateTime.Now:yyyyddMMHHmmss}.xlsx");
@@ -1056,12 +1073,12 @@ namespace Accounting_System.Controllers
                 foreach (var item in salesInvoiceList)
                 {
                     var netDiscount = item.Amount - item.Discount;
-                    var netOfVatAmount = item.Customer?.CustomerType == CS.VatType_Vatable
+                    var netOfVatAmount = item.Customer?.VatType == CS.VatType_Vatable
                         ? _generalRepo.ComputeNetOfVat(netDiscount)
                         : netDiscount;
-                    var vatAmount = item.Customer?.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeVatAmount(netOfVatAmount) : 0m;
-                    var withHoldingTaxAmount = item.Customer!.WithHoldingTax ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m) : 0;
-                    var withHoldingVatAmount = item.Customer.WithHoldingVat ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.05m) : 0;
+                    var vatAmount = item.Customer?.VatType == CS.VatType_Vatable ? _generalRepo.ComputeVatAmount(netOfVatAmount) : 0m;
+                    var withHoldingTaxAmount = item.Customer!.WithHoldingTax ? _generalRepo.ComputeEwtAmount(netOfVatAmount, item.CwtPercent) : 0;
+                    var withHoldingVatAmount = item.Customer.WithHoldingVat ? _generalRepo.ComputeEwtAmount(netOfVatAmount, item.CwVatPercent) : 0;
 
                     worksheet.Cells[row, 1].Value = item.TransactionDate.ToString("yyyy-MM-dd");
                     worksheet.Cells[row, 2].Value = item.SalesInvoiceNo;

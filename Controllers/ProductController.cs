@@ -53,7 +53,7 @@ namespace Accounting_System.Controllers
 
         public IActionResult Create()
         {
-            return View();
+            return View(new Product());
         }
 
         [HttpPost]
@@ -141,8 +141,11 @@ namespace Accounting_System.Controllers
                     existingProduct!.ProductCode = product.ProductCode;
                     existingProduct.ProductName = product.ProductName;
                     existingProduct.ProductUnit = product.ProductUnit;
+                    existingProduct.IsActive = product.IsActive;
+                    existingProduct.EditedBy = createdBy;
+                    existingProduct.EditedDate = DateTime.Now;
                     existingProduct.ProductId = product.ProductId;
-                    existingProduct.CreatedDate = product.CreatedDate;
+
 
                     if (_dbContext.ChangeTracker.HasChanges())
                     {
@@ -249,6 +252,10 @@ namespace Accounting_System.Controllers
                 worksheet.Cells["E1"].Value = "CreatedDate";
                 worksheet.Cells["F1"].Value = "OriginalProductId";
 
+                var addedHeaders = new[] { "IsActive", "EditedBy", "EditedDate" };
+                var addedStartColumn = worksheet.Dimension.Columns + 1;
+                for (var c = 0; c < addedHeaders.Length; c++) worksheet.Cells[1, addedStartColumn + c].Value = addedHeaders[c];
+
                 int row = 2;
 
                 foreach (var item in selectedList)
@@ -260,6 +267,8 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[row, 5].Value = item.CreatedDate.ToString(CS.ImportDateTimeFormat);
                     worksheet.Cells[row, 6].Value = item.ProductId;
 
+                    object?[] addedValues = [item.IsActive, item.EditedBy, item.EditedDate];
+                    for (var c = 0; c < addedValues.Length; c++) worksheet.Cells[row, addedStartColumn + c].Value = addedValues[c];
                     row++;
                 }
 

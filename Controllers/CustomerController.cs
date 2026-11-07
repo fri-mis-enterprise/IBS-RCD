@@ -12,7 +12,7 @@ using OfficeOpenXml;
 namespace Accounting_System.Controllers
 {
     [Authorize]
-    public class CustomerController : Controller
+    public partial class CustomerController : Controller
     {
         private readonly CustomerRepo _customerRepo;
 
@@ -45,6 +45,12 @@ namespace Accounting_System.Controllers
             return View(customer);
         }
 
+        private async Task LoadCommissioneesAsync()
+        {
+            ViewBag.Commissionees = await _dbContext.Suppliers.Where(s => s.IsActive && s.Category == "Commissionee")
+                .Select(s => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(s.SupplierName, s.SupplierId.ToString()))
+                .ToListAsync();
+        }
         [HttpGet]
         public async Task<IActionResult> GetAllCustomerIds(CancellationToken cancellationToken)
         {
@@ -55,15 +61,17 @@ namespace Accounting_System.Controllers
         }
 
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
+            await LoadCommissioneesAsync();
             return View(new Customer());
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Customer customer, CancellationToken cancellationToken)
+        public async Task<IActionResult> Create(Customer customer, IFormFile? birDocument, CancellationToken cancellationToken)
         {
+            await LoadCommissioneesAsync();
             if (ModelState.IsValid)
             {
                 await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -83,6 +91,10 @@ namespace Accounting_System.Controllers
                         return View(customer);
                     }
 
+                    customer.BirDocumentFilePath = null;
+                    customer.BirDocumentFileName = null;
+                    await SaveBirDocumentAsync(customer, birDocument, cancellationToken);
+                    customer.CustomerCode = await _customerRepo.GenerateCodeAsync(customer.CustomerType, cancellationToken);
                     customer.Number = await _customerRepo.GetLastNumber(cancellationToken);
                     customer.CreatedBy = createdBy;
 
@@ -123,6 +135,7 @@ namespace Accounting_System.Controllers
             try
             {
                 var customers = await _dbContext.Customers.FirstOrDefaultAsync(x => x.CustomerId == id, cancellationToken);
+                await LoadCommissioneesAsync();
                 return View(customers);
             }
             catch (Exception)
@@ -133,7 +146,7 @@ namespace Accounting_System.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Customer customer, CancellationToken cancellationToken)
+        public async Task<IActionResult> Edit(int id, Customer customer, IFormFile? birDocument, CancellationToken cancellationToken)
         {
             if (id != customer.CustomerId)
             {
@@ -141,6 +154,7 @@ namespace Accounting_System.Controllers
             }
             var existingModel = await _customerRepo.FindCustomerAsync(id, cancellationToken);
 
+            await LoadCommissioneesAsync();
             if (ModelState.IsValid)
             {
                 await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -148,6 +162,7 @@ namespace Accounting_System.Controllers
 
                 try
                 {
+                    await SaveBirDocumentAsync(existingModel, birDocument, cancellationToken);
                     existingModel.CustomerName = customer.CustomerName;
                     existingModel.CustomerAddress = customer.CustomerAddress;
                     existingModel.CustomerTin = customer.CustomerTin;
@@ -157,6 +172,24 @@ namespace Accounting_System.Controllers
                     existingModel.WithHoldingTax = customer.WithHoldingTax;
                     existingModel.WithHoldingVat = customer.WithHoldingVat;
                     existingModel.ZipCode = customer.ZipCode;
+
+                    existingModel.VatType = customer.VatType;
+                    existingModel.IsActive = customer.IsActive;
+                    existingModel.ClusterCode = customer.ClusterCode;
+                    existingModel.StationCode = customer.StationCode;
+                    existingModel.CreditLimit = customer.CreditLimit;
+                    existingModel.CreditLimitAsOfToday = customer.CreditLimitAsOfToday;
+                    existingModel.HasBranch = customer.HasBranch;
+                    existingModel.RetentionRate = customer.RetentionRate;
+                    existingModel.HasMultipleTerms = customer.HasMultipleTerms;
+                    existingModel.RequiresPriceAdjustment = customer.RequiresPriceAdjustment;
+                    existingModel.CommissioneeId = customer.CommissioneeId;
+                    existingModel.CommissionRate = customer.CommissionRate;
+
+                    existingModel.CwtPercent = customer.CwtPercent;
+                    existingModel.CwVatPercent = customer.CwVatPercent;
+                    existingModel.EditedBy = createdBy;
+                    existingModel.EditedDate = DateTime.Now;
 
                     if (_dbContext.ChangeTracker.HasChanges())
                     {
@@ -254,6 +287,10 @@ namespace Accounting_System.Controllers
                 worksheet.Cells["L1"].Value = "OriginalCustomerId";
                 worksheet.Cells["M1"].Value = "OriginalCustomerNumber";
 
+                var addedHeaders = new[] { "CustomerCode", "VatType", "IsActive", "EditedBy", "EditedDate", "ClusterCode", "StationCode", "CreditLimit", "CreditLimitAsOfToday", "HasBranch", "RetentionRate", "HasMultipleTerms", "BirDocumentFilePath", "BirDocumentFileName", "RequiresPriceAdjustment", "CommissioneeId", "CommissionRate", "CwtPercent", "CwVatPercent" };
+                var addedStartColumn = worksheet.Dimension.Columns + 1;
+                for (var c = 0; c < addedHeaders.Length; c++) worksheet.Cells[1, addedStartColumn + c].Value = addedHeaders[c];
+
                 int row = 2;
 
                 foreach (var item in selectedList)
@@ -272,6 +309,8 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[row, 12].Value = item.CustomerId;
                     worksheet.Cells[row, 13].Value = item.Number;
 
+                    object?[] addedValues = [item.CustomerCode, item.VatType, item.IsActive, item.EditedBy, item.EditedDate, item.ClusterCode?.ToString(), item.StationCode, item.CreditLimit, item.CreditLimitAsOfToday, item.HasBranch, item.RetentionRate, item.HasMultipleTerms, item.BirDocumentFilePath, item.BirDocumentFileName, item.RequiresPriceAdjustment, item.CommissioneeId, item.CommissionRate, item.CwtPercent, item.CwVatPercent];
+                    for (var c = 0; c < addedValues.Length; c++) worksheet.Cells[row, addedStartColumn + c].Value = addedValues[c];
                     row++;
                 }
 

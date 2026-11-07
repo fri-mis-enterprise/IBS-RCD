@@ -16,7 +16,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Accounting_System.Controllers
 {
-    public class CheckVoucherTradeController : Controller
+    public partial class CheckVoucherTradeController : Controller
     {
         private readonly ApplicationDbContext _dbContext;
 
@@ -137,14 +137,14 @@ namespace Accounting_System.Controllers
             CheckVoucherTradeViewModel model = new()
             {
                 COA = await _dbContext.ChartOfAccounts
-                    .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber != null && coa.AccountNumber.Contains(excludedNumber)) && !coa.HasChildren)
+                    .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber != null && coa.AccountNumber.Contains(excludedNumber)) && !coa.HasChildren && !coa.IsHidden)
                     .Select(s => new SelectListItem
                     {
                         Value = s.AccountNumber,
                         Text = s.AccountNumber + " " + s.AccountName
                     })
                     .ToListAsync(cancellationToken),
-                Suppliers = await _dbContext.Suppliers
+                Suppliers = await _dbContext.Suppliers.Where(x => x.IsActive)
                     .Where(supp => supp.Category == "Trade")
                     .OrderBy(supp => supp.Number)
                     .Select(sup => new SelectListItem
@@ -153,11 +153,11 @@ namespace Accounting_System.Controllers
                         Text = sup.SupplierName
                     })
                     .ToListAsync(cancellationToken: cancellationToken),
-                BankAccounts = await _dbContext.BankAccounts
+                BankAccounts = await _dbContext.BankAccounts.Where(x => x.IsActive)
                     .Select(ba => new SelectListItem
                     {
                         Value = ba.BankAccountId.ToString(),
-                        Text = ba.Bank + " " + ba.AccountName
+                        Text = ba.Bank + " " + ba.AccountNo + " " + ba.AccountName
                     })
                     .ToListAsync(cancellationToken: cancellationToken)
             };
@@ -186,7 +186,7 @@ namespace Accounting_System.Controllers
                         if (cv.Any())
                         {
                             viewModel.COA = await _dbContext.ChartOfAccounts
-                                .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber != null && coa.AccountNumber.Contains(excludedNumber)) && !coa.HasChildren)
+                                .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber != null && coa.AccountNumber.Contains(excludedNumber)) && !coa.HasChildren && !coa.IsHidden)
                                 .Select(s => new SelectListItem
                                 {
                                     Value = s.AccountNumber,
@@ -194,7 +194,7 @@ namespace Accounting_System.Controllers
                                 })
                                 .ToListAsync(cancellationToken);
 
-                            viewModel.Suppliers = await _dbContext.Suppliers
+                            viewModel.Suppliers = await _dbContext.Suppliers.Where(x => x.IsActive)
                                 .Where(supp => supp.Category == "Trade")
                                 .Select(sup => new SelectListItem
                                 {
@@ -212,11 +212,11 @@ namespace Accounting_System.Controllers
                                 })
                                 .ToListAsync(cancellationToken);
 
-                            viewModel.BankAccounts = await _dbContext.BankAccounts
+                            viewModel.BankAccounts = await _dbContext.BankAccounts.Where(x => x.IsActive)
                                 .Select(ba => new SelectListItem
                                 {
                                     Value = ba.BankAccountId.ToString(),
-                                    Text = ba.Bank + " " + ba.AccountName
+                                    Text = ba.Bank + " " + ba.AccountNo + " " + ba.AccountName
                                 })
                                 .ToListAsync(cancellationToken: cancellationToken);
 
@@ -266,7 +266,9 @@ namespace Accounting_System.Controllers
                         // Tin = supplier.SupplierTin,
                     };
 
+                    viewModel.Documentation.ApplyTo(cvh);
                     await _dbContext.CheckVoucherHeaders.AddAsync(cvh, cancellationToken);
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
                     await _dbContext.SaveChangesAsync(cancellationToken);
 
                     #endregion --Saving the default entries
@@ -337,7 +339,8 @@ namespace Accounting_System.Controllers
                         await file.CopyToAsync(stream, cancellationToken);
 
                         //if necessary add field to store location path
-                        // model.Header.SupportingFilePath = fileSavePath
+                        cvh.SupportingFileSavedFileName = Path.GetFileName(file.FileName);
+                        cvh.SupportingFileSavedUrl = fileSavePath;
                     }
 
                     #region --Audit Trail Recording
@@ -353,6 +356,7 @@ namespace Accounting_System.Controllers
                     #endregion --Audit Trail Recording
 
                     TempData["success"] = "Check voucher trade created successfully";
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
                     await _dbContext.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
                     return RedirectToAction(nameof(Index));
@@ -364,7 +368,7 @@ namespace Accounting_System.Controllers
                     _logger.LogError(ex, "Failed to create check voucher. Error: {ErrorMessage}, Stack: {StackTrace}. Created by: {UserName}",
                         ex.Message, ex.StackTrace, createdBy);
                     viewModel.COA = await _dbContext.ChartOfAccounts
-                        .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber != null && coa.AccountNumber.Contains(excludedNumber)) && !coa.HasChildren)
+                        .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber != null && coa.AccountNumber.Contains(excludedNumber)) && !coa.HasChildren && !coa.IsHidden)
                         .Select(s => new SelectListItem
                         {
                             Value = s.AccountNumber,
@@ -372,7 +376,7 @@ namespace Accounting_System.Controllers
                         })
                         .ToListAsync(cancellationToken);
 
-                    viewModel.Suppliers = await _dbContext.Suppliers
+                    viewModel.Suppliers = await _dbContext.Suppliers.Where(x => x.IsActive)
                             .Where(supp => supp.Category == "Trade")
                             .Select(sup => new SelectListItem
                             {
@@ -390,11 +394,11 @@ namespace Accounting_System.Controllers
                                 })
                                 .ToListAsync(cancellationToken);
 
-                    viewModel.BankAccounts = await _dbContext.BankAccounts
+                    viewModel.BankAccounts = await _dbContext.BankAccounts.Where(x => x.IsActive)
                         .Select(ba => new SelectListItem
                         {
                             Value = ba.BankAccountId.ToString(),
-                            Text = ba.Bank + " " + ba.AccountName
+                            Text = ba.Bank + " " + ba.AccountNo + " " + ba.AccountName
                         })
                         .ToListAsync(cancellationToken: cancellationToken);
 
@@ -404,7 +408,7 @@ namespace Accounting_System.Controllers
                 }
             }
             viewModel.COA = await _dbContext.ChartOfAccounts
-                .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber != null && coa.AccountNumber.Contains(excludedNumber)) && !coa.HasChildren)
+                .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber != null && coa.AccountNumber.Contains(excludedNumber)) && !coa.HasChildren && !coa.IsHidden)
                 .Select(s => new SelectListItem
                 {
                     Value = s.AccountNumber,
@@ -412,7 +416,7 @@ namespace Accounting_System.Controllers
                 })
                 .ToListAsync(cancellationToken);
 
-            viewModel.Suppliers = await _dbContext.Suppliers
+            viewModel.Suppliers = await _dbContext.Suppliers.Where(x => x.IsActive)
                 .Where(supp => supp.Category == "Trade")
                 .Select(sup => new SelectListItem
                 {
@@ -430,11 +434,11 @@ namespace Accounting_System.Controllers
                 })
                 .ToListAsync(cancellationToken);
 
-            viewModel.BankAccounts = await _dbContext.BankAccounts
+            viewModel.BankAccounts = await _dbContext.BankAccounts.Where(x => x.IsActive)
                 .Select(ba => new SelectListItem
                 {
                     Value = ba.BankAccountId.ToString(),
-                    Text = ba.Bank + " " + ba.AccountName
+                    Text = ba.Bank + " " + ba.AccountNo + " " + ba.AccountName
                 })
                 .ToListAsync(cancellationToken: cancellationToken);
 
@@ -570,6 +574,7 @@ namespace Accounting_System.Controllers
                 // SupplierTinNo = existingHeaderModel.Tin,
                 POSeries = existingHeaderModel.PONo,
                 TransactionDate = existingHeaderModel.Date,
+                Documentation = CheckVoucherDocumentationViewModel.From(existingHeaderModel),
                 BankId = existingHeaderModel.BankId,
                 CheckNo = existingHeaderModel.CheckNo!,
                 CheckDate = existingHeaderModel.CheckDate ?? DateOnly.MinValue,
@@ -578,7 +583,7 @@ namespace Accounting_System.Controllers
                 CVNo = existingHeaderModel.CheckVoucherHeaderNo,
                 CreatedBy = createdBy,
                 RRs = new List<ReceivingReportList>(),
-                Suppliers = await _dbContext.Suppliers
+                Suppliers = await _dbContext.Suppliers.Where(x => x.IsActive)
                     .Where(supp => supp.Category == "Trade")
                     .OrderBy(supp => supp.Number)
                     .Select(sup => new SelectListItem
@@ -603,7 +608,7 @@ namespace Accounting_System.Controllers
             }
 
             model.COA = await _dbContext.ChartOfAccounts
-                .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber != null && coa.AccountNumber.Contains(excludedNumber)) && !coa.HasChildren)
+                .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber != null && coa.AccountNumber.Contains(excludedNumber)) && !coa.HasChildren && !coa.IsHidden)
                 .Select(s => new SelectListItem
                 {
                     Value = s.AccountNumber,
@@ -620,11 +625,11 @@ namespace Accounting_System.Controllers
                 })
                 .ToListAsync(cancellationToken);
 
-            model.BankAccounts = await _dbContext.BankAccounts
+            model.BankAccounts = await _dbContext.BankAccounts.Where(x => x.IsActive)
                 .Select(ba => new SelectListItem
                 {
                     Value = ba.BankAccountId.ToString(),
-                    Text = ba.Bank + " " + ba.AccountName
+                    Text = ba.Bank + " " + ba.AccountNo + " " + ba.AccountName
                 })
                 .ToListAsync(cancellationToken: cancellationToken);
 
@@ -649,6 +654,7 @@ namespace Accounting_System.Controllers
                         .ToListAsync(cancellationToken: cancellationToken);
 
                     _dbContext.RemoveRange(existingDetailsModel);
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
                     await _dbContext.SaveChangesAsync(cancellationToken);
 
                     var details = new List<CheckVoucherDetail>();
@@ -680,6 +686,7 @@ namespace Accounting_System.Controllers
                     #region --Saving the default entries
 
                     existingHeaderModel!.Date = viewModel.TransactionDate;
+                    viewModel.Documentation.ApplyTo(existingHeaderModel!);
                     existingHeaderModel.PONo = viewModel.POSeries;
                     existingHeaderModel.SupplierId = viewModel.SupplierId;
                     // existingHeaderModel.Address = viewModel.SupplierAddress;
@@ -710,6 +717,7 @@ namespace Accounting_System.Controllers
                     }
 
                     _dbContext.RemoveRange(getCheckVoucherTradePayment);
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
                     await _dbContext.SaveChangesAsync(cancellationToken);
 
                     var cvTradePaymentModel = new List<CVTradePayment>();
@@ -729,6 +737,7 @@ namespace Accounting_System.Controllers
                     }
 
                     await _dbContext.AddRangeAsync(cvTradePaymentModel, cancellationToken);
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
                     await _dbContext.SaveChangesAsync(cancellationToken);
 
                     #endregion -- Partial payment of RR's
@@ -752,7 +761,8 @@ namespace Accounting_System.Controllers
                         await file.CopyToAsync(stream, cancellationToken);
 
                         //if necessary add field to store location path
-                        // model.Header.SupportingFilePath = fileSavePath
+                        existingHeaderModel.SupportingFileSavedFileName = Path.GetFileName(file.FileName);
+                        existingHeaderModel.SupportingFileSavedUrl = fileSavePath;
                     }
 
                     #endregion -- Uploading file --
@@ -769,6 +779,8 @@ namespace Accounting_System.Controllers
 
                     #endregion --Audit Trail Recording
 
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
+
                     await _dbContext.SaveChangesAsync(cancellationToken);  // await the SaveChangesAsync method
                     await transaction.CommitAsync(cancellationToken);
                     TempData["success"] = "Trade edited successfully";
@@ -779,7 +791,7 @@ namespace Accounting_System.Controllers
                     _logger.LogError(ex, "Failed to edit check voucher. Error: {ErrorMessage}, Stack: {StackTrace}. Edited by: {UserName}",
                         ex.Message, ex.StackTrace, createdBy);
                     viewModel.COA = await _dbContext.ChartOfAccounts
-                        .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber != null && coa.AccountNumber.Contains(excludedNumber)) && !coa.HasChildren)
+                        .Where(coa => !new[] { "202010200", "202010100", "101010100" }.Any(excludedNumber => coa.AccountNumber != null && coa.AccountNumber.Contains(excludedNumber)) && !coa.HasChildren && !coa.IsHidden)
                         .Select(s => new SelectListItem
                         {
                             Value = s.AccountNumber,
@@ -796,15 +808,15 @@ namespace Accounting_System.Controllers
                         })
                         .ToListAsync(cancellationToken);
 
-                    viewModel.BankAccounts = await _dbContext.BankAccounts
+                    viewModel.BankAccounts = await _dbContext.BankAccounts.Where(x => x.IsActive)
                         .Select(ba => new SelectListItem
                         {
                             Value = ba.BankAccountId.ToString(),
-                            Text = ba.Bank + " " + ba.AccountName
+                            Text = ba.Bank + " " + ba.AccountNo + " " + ba.AccountName
                         })
                         .ToListAsync(cancellationToken: cancellationToken);
 
-                    viewModel.Suppliers = await _dbContext.Suppliers
+                    viewModel.Suppliers = await _dbContext.Suppliers.Where(x => x.IsActive)
                             .OrderBy(s => s.Number)
                             .Select(s => new SelectListItem
                             {
@@ -1267,7 +1279,7 @@ namespace Accounting_System.Controllers
                 worksheet4.Cells["M1"].Value = "IsClosed";
                 worksheet4.Cells["N1"].Value = "CancellationRemarks";
                 worksheet4.Cells["O1"].Value = "OriginalProductId";
-                worksheet4.Cells["P1"].Value = "OriginalJVNo";
+                worksheet4.Cells["P1"].Value = "OriginalPONo";
                 worksheet4.Cells["Q1"].Value = "OriginalSupplierId";
                 worksheet4.Cells["R1"].Value = "OriginalDocumentId";
                 worksheet4.Cells["S1"].Value = "PostedBy";
@@ -1375,6 +1387,16 @@ namespace Accounting_System.Controllers
                 worksheet2.Cells["E1"].Value = "Credit";
                 worksheet2.Cells["F1"].Value = "CVHeaderId";
                 worksheet2.Cells["G1"].Value = "OriginalDocumentId";
+                worksheet2.Cells["H1"].Value = "Amount";
+                worksheet2.Cells["I1"].Value = "AmountPaid";
+                worksheet2.Cells["J1"].Value = "SupplierId";
+                worksheet2.Cells["K1"].Value = "EwtPercent";
+                worksheet2.Cells["L1"].Value = "IsUserSelected";
+                worksheet2.Cells["M1"].Value = "IsVatable";
+                worksheet2.Cells["N1"].Value = "IsDisplayEntry";
+                worksheet2.Cells["O1"].Value = "SubAccountType";
+                worksheet2.Cells["P1"].Value = "SubAccountId";
+                worksheet2.Cells["Q1"].Value = "SubAccountName";
 
                 #endregion -- Check Voucher Details Table Header --
 
@@ -1591,6 +1613,10 @@ namespace Accounting_System.Controllers
                     worksheet2.Cells[cvdRow, 11].Value = item.EwtPercent;
                     worksheet2.Cells[cvdRow, 12].Value = item.IsUserSelected;
                     worksheet2.Cells[cvdRow, 13].Value = item.IsVatable;
+                    worksheet2.Cells[cvdRow, 14].Value = item.IsDisplayEntry;
+                    worksheet2.Cells[cvdRow, 15].Value = item.SubAccountType?.ToString();
+                    worksheet2.Cells[cvdRow, 16].Value = item.SubAccountId;
+                    worksheet2.Cells[cvdRow, 17].Value = item.SubAccountName;
 
                     cvdRow++;
                 }
@@ -1619,6 +1645,10 @@ namespace Accounting_System.Controllers
                     worksheet2.Cells[cvdRow, 11].Value = item.EwtPercent;
                     worksheet2.Cells[cvdRow, 12].Value = item.IsUserSelected;
                     worksheet2.Cells[cvdRow, 13].Value = item.IsVatable;
+                    worksheet2.Cells[cvdRow, 14].Value = item.IsDisplayEntry;
+                    worksheet2.Cells[cvdRow, 15].Value = item.SubAccountType?.ToString();
+                    worksheet2.Cells[cvdRow, 16].Value = item.SubAccountId;
+                    worksheet2.Cells[cvdRow, 17].Value = item.SubAccountName;
 
                     cvdRow++;
                 }
@@ -1723,6 +1753,9 @@ namespace Accounting_System.Controllers
                 #endregion -- Purchase Order Export --
 
                 // Convert the Excel package to a byte array
+                TransactionColumns.Export(worksheet, selectedList.Concat(checkVoucherPayment));
+                TransactionColumns.Export(worksheet3, getReceivingReport);
+                TransactionColumns.Export(worksheet4, getPurchaseOrder);
                 await VoucherExportDependencies.IncludeAsync(_dbContext, package, cancellationToken);
                 var excelBytes = await package.GetAsByteArrayAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);

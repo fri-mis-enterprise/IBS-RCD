@@ -1,3 +1,4 @@
+using Accounting_System.Models.MasterFile;
 namespace Accounting_System.Models.ViewModels
 {
     public class CheckVoucherDetailsUploadExcelFileViewModel
@@ -16,5 +17,9 @@ namespace Accounting_System.Models.ViewModels
         public decimal EwtPercent { get; set; }
         public bool IsUserSelected { get; set; }
         public bool IsVatable { get; set; }
+        public bool IsDisplayEntry { get; set; }
+        public SubAccountType? SubAccountType { get; set; }
+        public int? SubAccountId { get; set; }
+        public string? SubAccountName { get; set; }
     }
 }

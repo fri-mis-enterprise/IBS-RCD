@@ -1,4 +1,4 @@
-﻿@model CollectionReceipt
+@model CollectionReceipt
 @using Accounting_System.Models.AccountsReceivable
 @using Microsoft.AspNetCore.Identity
 @inject UserManager<IdentityUser> UserManager
@@ -443,7 +443,9 @@ else
     <a asp-action="PrintedCollectionReceipt" class="btn btn-success" asp-route-id="@Model.CollectionReceiptId" onclick="printPage()" style="margin-top: 25px;" id="printButton">Print</a>
 }
 <a asp-action="CollectionIndex" class="btn" style="margin-top: 25px;" id="otherButton">Back</a>
+<partial name="_BankInformation" model="Model"/>
 @section Scripts{
+    <script src="~/js/receipt-bank-information.js" asp-append-version="true"></script>
     <script>
         let originalFontSizes = [];
 
@@ -505,7 +507,7 @@ else
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Replace with the actual URL that you want to redirect to
-                    
+
                     window.location.href = `@Url.Action("Post", "Receipt")/${id}`;
                 }
             })

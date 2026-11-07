@@ -1,4 +1,4 @@
-﻿@using Accounting_System.Models.MasterFile
+@using Accounting_System.Models.MasterFile
 @model IEnumerable<BankAccount>
 
 @{
@@ -40,7 +40,7 @@
                 <th>
                     @Html.DisplayNameFor(model => model.CreatedDate)
                 </th>
-                <th></th>
+                <th>Branch</th><th>Account No</th><th>Is Active</th><th></th>
             </tr>
             </thead>
             <tbody>
@@ -58,7 +58,8 @@
                     </td>
                     <td>
                         @data.CreatedDate.ToString("MM/dd/yyyy")
-                    </td>
+                    </td><td>@data.Branch</td><td>@data.AccountNo</td><td>@data.IsActive</td>
+
                     <td>
                         <a asp-action="Edit" class="btn btn-light" asp-route-id="@data.BankAccountId">Edit</a>
                     </td>

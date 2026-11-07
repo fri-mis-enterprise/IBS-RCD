@@ -1,0 +1,257 @@
+[
+  {
+    "file": "Controllers/CheckVoucherNonTradeInvoiceController.cs",
+    "name": "Post",
+    "sha256": "5c375fbfb4bdf2b1c45aed8c0645e0c5e37df7c535caee4bb42caf61ab51bb9e"
+  },
+  {
+    "file": "Controllers/CheckVoucherNonTradeInvoiceController.cs",
+    "name": "Cancel",
+    "sha256": "17c43c6ee18f4cb4c031dfbaeb10bdd85f08f5a937e66b47831b9f97f3b80b69"
+  },
+  {
+    "file": "Controllers/CheckVoucherNonTradeInvoiceController.cs",
+    "name": "Void",
+    "sha256": "be354c7745683d6cfdb350bc29d5b8853d112e257fbce9e0ad6d400c260c1427"
+  },
+  {
+    "file": "Controllers/CheckVoucherNonTradePaymentController.cs",
+    "name": "Post",
+    "sha256": "88a0276b53b81280e6e2160acd3d7848e79456f74475976767d36fc2a6b6ba0b"
+  },
+  {
+    "file": "Controllers/CheckVoucherNonTradePaymentController.cs",
+    "name": "Cancel",
+    "sha256": "02b507fc4fa6c9c08832fc2752fcd347507098b0c1083a55adde459a1dcd1a8f"
+  },
+  {
+    "file": "Controllers/CheckVoucherNonTradePaymentController.cs",
+    "name": "Void",
+    "sha256": "821e8fd3590012352b5666a710f08220e50e4e1557f2ea8b233a796258a5e41f"
+  },
+  {
+    "file": "Controllers/CheckVoucherTradeController.cs",
+    "name": "Post",
+    "sha256": "8e6646d3508d574995402d315a733db9d1f90d2a5b7a0f91ffb5f951b63f3857"
+  },
+  {
+    "file": "Controllers/CheckVoucherTradeController.cs",
+    "name": "Cancel",
+    "sha256": "446a1cf424b7e3b6fae2202e3c132b03611544f6370a34e125e256611d24eac8"
+  },
+  {
+    "file": "Controllers/CheckVoucherTradeController.cs",
+    "name": "Void",
+    "sha256": "5f8771f59db5c1048776a70fd0c8cdb8edb61a94cd705fb6baa26ec10e495140"
+  },
+  {
+    "file": "Controllers/CreditMemoController.cs",
+    "name": "Post",
+    "sha256": "01a42ae5346f55107da125821e4f291d724b1ad9b38d13bb44f4ac38c4cb2c1a"
+  },
+  {
+    "file": "Controllers/CreditMemoController.cs",
+    "name": "Void",
+    "sha256": "8754309d696be60c617bd69a7b25bab082243ae6cf35527a0a367ea87f4eef54"
+  },
+  {
+    "file": "Controllers/CreditMemoController.cs",
+    "name": "Cancel",
+    "sha256": "ebad78d77e598ed1eb29c0cf9d8f744bec0b1052d10588ff70edac0861648515"
+  },
+  {
+    "file": "Controllers/DebitMemoController.cs",
+    "name": "Post",
+    "sha256": "850bb68e82798ebe8c1ef7fbbfa5c9bb13e3ff60bc1fe05b15da5380958e3e7c"
+  },
+  {
+    "file": "Controllers/DebitMemoController.cs",
+    "name": "Void",
+    "sha256": "b5b8d408d8209abea6561c2b7c1b5bff5ca67951de3675be976a35091cb882ae"
+  },
+  {
+    "file": "Controllers/DebitMemoController.cs",
+    "name": "Cancel",
+    "sha256": "14d279eae855768aee58a6d0de6b1861f0d97c1ce3e957e27eefea0e69ba5e24"
+  },
+  {
+    "file": "Controllers/JournalVoucherController.cs",
+    "name": "Post",
+    "sha256": "dcb581dcc4eacd0b0776012cdd8e9988349de164ab6ea5e209c9714dd6740ea5"
+  },
+  {
+    "file": "Controllers/JournalVoucherController.cs",
+    "name": "Void",
+    "sha256": "01095a25fde52440f41282f48f8b030cf62aaaf79aa4289a7bf628b327b91e9e"
+  },
+  {
+    "file": "Controllers/JournalVoucherController.cs",
+    "name": "Cancel",
+    "sha256": "ed246da16b8a8a0bb4ac0f5f70aa210e905643cdb4052543ded854a008fe8ef2"
+  },
+  {
+    "file": "Controllers/PurchaseOrderController.cs",
+    "name": "Post",
+    "sha256": "0df05111acf30432424248a61dba36e8925a9ab21cd9f6e217682ebf6d68aa41"
+  },
+  {
+    "file": "Controllers/PurchaseOrderController.cs",
+    "name": "Void",
+    "sha256": "179cb508a876f4c02187513a6fc77879488914df68e6f34afdec437f26428b35"
+  },
+  {
+    "file": "Controllers/PurchaseOrderController.cs",
+    "name": "Cancel",
+    "sha256": "496d054f500f8e8f7f8d40a29eaf0eb09df72d7ab8f06f4a490f1193d89441c7"
+  },
+  {
+    "file": "Controllers/ReceiptController.cs",
+    "name": "Post",
+    "sha256": "ccf6a91f3d164e9ea295c28b94e36286526efcd0d63832005ffd172a108074b7"
+  },
+  {
+    "file": "Controllers/ReceiptController.cs",
+    "name": "Void",
+    "sha256": "a047bc041367549e5db7ccba9ac76157d1b951ec41b4a31b4266b7aa581af4c8"
+  },
+  {
+    "file": "Controllers/ReceiptController.cs",
+    "name": "Cancel",
+    "sha256": "aeaa2bb04316c80dd72fa5fdca35117817e9e87dc16dfa614e0ab26ac3bc6bae"
+  },
+  {
+    "file": "Controllers/ReceivingReportController.cs",
+    "name": "Post",
+    "sha256": "39acf261c9e78c6acac62dd265eca42c33d3b2b5ef3a548a65fbcb6f1885dd9c"
+  },
+  {
+    "file": "Controllers/ReceivingReportController.cs",
+    "name": "Void",
+    "sha256": "3506ea1047241b572990f77d4c7bcf1b170612305b28d5f4a3b4654983e384cd"
+  },
+  {
+    "file": "Controllers/ReceivingReportController.cs",
+    "name": "Cancel",
+    "sha256": "62cb127b3b3d0787df160164241abb805e1ee4c9f39960ad9cd53e61bafe5298"
+  },
+  {
+    "file": "Controllers/SalesInvoiceController.cs",
+    "name": "Post",
+    "sha256": "91e840c4d88167a6fdb8a7bfd67e406f857c7b123cbddf050b52172bdfe66b47"
+  },
+  {
+    "file": "Controllers/SalesInvoiceController.cs",
+    "name": "Void",
+    "sha256": "3e3b0822962756665713175578002ce56b01f669a7ed424f2bc025952c7d3b1f"
+  },
+  {
+    "file": "Controllers/SalesInvoiceController.cs",
+    "name": "Cancel",
+    "sha256": "0e180788c61887619e42d25477051dae0b8584717bb5228a074ea58dbff8bb2e"
+  },
+  {
+    "file": "Controllers/ServiceInvoiceController.cs",
+    "name": "Post",
+    "sha256": "3cecce1689baf2dfb838e9973f40b78db69dc3ee8d52c57e8dd53f00a5cff67c"
+  },
+  {
+    "file": "Controllers/ServiceInvoiceController.cs",
+    "name": "Cancel",
+    "sha256": "d66b6d5962793e4ae32f16b3306f0179a84707293246c81d804b72465599e5e7"
+  },
+  {
+    "file": "Controllers/ServiceInvoiceController.cs",
+    "name": "Void",
+    "sha256": "f5a6a61b8eab5ca03e06fe7f7cad9be5c48640d010b51037fdb4db46b02f4ad4"
+  },
+  {
+    "file": "Repository/CheckVoucherRepo.cs",
+    "name": "GeneralLedgerBookPosting",
+    "sha256": "67755aa465285d274dd8ba445ce679941abb336e2651b5979af02cbd5aaf9181"
+  },
+  {
+    "file": "Repository/CheckVoucherRepo.cs",
+    "name": "DisbursementBookPosting",
+    "sha256": "ae1b736fad4e9b637479a66b89f24778b7409166093ec10aa5183d1fd7f6353c"
+  },
+  {
+    "file": "Repository/CreditMemoRepo.cs",
+    "name": "SalesBookPosting",
+    "sha256": "6e4c2657a98c4f8d3ed4710c9eb501af29cfd468b5c82a851ae78c4b95050844"
+  },
+  {
+    "file": "Repository/CreditMemoRepo.cs",
+    "name": "GeneralLedgerBookPosting",
+    "sha256": "aa948dde0457c483cb4bcab67089506be8c8b07bafbd4f4613c829f8d7d30a70"
+  },
+  {
+    "file": "Repository/DebitMemoRepo.cs",
+    "name": "SalesBookPosting",
+    "sha256": "7574ccff1e8bed63037d171b8183310331e55f102d3baa891ece7fadbcb81133"
+  },
+  {
+    "file": "Repository/DebitMemoRepo.cs",
+    "name": "GeneralLedgerBookPosting",
+    "sha256": "00b104147c7804e493a9e0282ae93f0c995f6e4b086269434215d339d7b06adf"
+  },
+  {
+    "file": "Repository/InventoryRepo.cs",
+    "name": "VoidInventory",
+    "sha256": "ed0203ae1595bdc99536fdf195814017a1a7dc69a9f6c5e311434c3476456da4"
+  },
+  {
+    "file": "Repository/JournalVoucherRepo.cs",
+    "name": "GeneralLedgerBookPosting",
+    "sha256": "7466acffa19996337a1f0f039455f73b6c5476e4f7431f116e864a09b60086d0"
+  },
+  {
+    "file": "Repository/JournalVoucherRepo.cs",
+    "name": "JournalBookPosting",
+    "sha256": "7dbe900982d03f18fc121b77cdcdd9a09de11fc6aa02ef0a9cef4df375366480"
+  },
+  {
+    "file": "Repository/ReceiptRepo.cs",
+    "name": "PostAsync",
+    "sha256": "0f3ba0096cf4a4060e35a4cc3f4d2a4063a134a660323696b856aef6a50ca99f"
+  },
+  {
+    "file": "Repository/ReceiptRepo.cs",
+    "name": "CollectionReceiptPosting",
+    "sha256": "7ed1a0bd4b4777cfa7c976de8c738fb8bd6d9aaaba0ab8a47f8a93b490827cc5"
+  },
+  {
+    "file": "Repository/ReceivingReportRepo.cs",
+    "name": "PostAsync",
+    "sha256": "63ddb9269f0f7ca1305ce22fa3ad0549920c2e170c233f2129db78cd3e971ec3"
+  },
+  {
+    "file": "Repository/SalesInvoiceRepo.cs",
+    "name": "SalesBookPosting",
+    "sha256": "1d5046c9798650de0344482a19d497ec1d34194c9e4da837a033fc6e83c0fedc"
+  },
+  {
+    "file": "Repository/SalesInvoiceRepo.cs",
+    "name": "GeneralLedgerBookPosting",
+    "sha256": "d661f951d7c789f4612aefd591cffa9a62824bf29856027cdc5bee10d7a65b39"
+  },
+  {
+    "file": "Repository/ServiceInvoiceRepo.cs",
+    "name": "SalesBookPosting",
+    "sha256": "1a5bf503a0d9ee0a5387edcac38342fea5bfdc8701db7c2e93fc30169541cc29"
+  },
+  {
+    "file": "Repository/ServiceInvoiceRepo.cs",
+    "name": "GeneralLedgerBookPosting",
+    "sha256": "f9f0ee765e6dc391a6c0cd7eb4155acff244150b718cbece23eb250f64db849a"
+  },
+  {
+    "file": "Repository/WorkbookImport.Vouchers.cs",
+    "name": "PostCheckVouchersAsync",
+    "sha256": "635e9e68c5058bbd36e90a44af919822a46bc0d2726dc90089646a18c24f12fe"
+  },
+  {
+    "file": "Repository/WorkbookImport.Vouchers.cs",
+    "name": "PostJournalVouchersAsync",
+    "sha256": "b30c070f7495ac3f02fd916a3992a1cd45feb58dcebc130da5ad8105592c060c"
+  }
+]

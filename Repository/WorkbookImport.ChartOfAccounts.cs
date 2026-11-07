@@ -67,6 +67,8 @@ public partial class WorkbookImport
                 IsMain = Boolean("IsMain"), HasChildren = Boolean("HasChildren"), Level = Integer("Level"),
                 CreatedBy = Text("CreatedBy"), CreatedDate = Date("CreatedDate"),
                 EditedBy = Text("EditedBy"), EditedDate = Date("EditedDate"),
+                IsHidden = columns.ContainsKey("IsHidden") && Boolean("IsHidden"),
+                FinancialStatementType = columns.ContainsKey("FinancialStatementType") ? Text("FinancialStatementType") : string.Empty,
                 Parent = columns.ContainsKey("Parent") ? Text("Parent") : string.Empty
             };
             if (account.AccountNumber.Length == 0 || account.AccountName.Length == 0)
@@ -128,8 +130,12 @@ public partial class WorkbookImport
             }
             var target = targets[id];
             if (!ReferenceEquals(target, row.Account))
+            {
+                if (!columns.ContainsKey("IsHidden")) row.Account.IsHidden = target.IsHidden;
+                if (!columns.ContainsKey("FinancialStatementType")) row.Account.FinancialStatementType = target.FinancialStatementType;
                 await UpdateMasterAsync(target, row.Account, "ChartOfAccount", token,
                     columns.ContainsKey("Parent") ? [] : [nameof(ChartOfAccount.Parent)]);
+            }
         }
         await _dbContext.SaveChangesAsync(token);
     }

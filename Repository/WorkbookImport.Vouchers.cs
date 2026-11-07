@@ -17,7 +17,7 @@ public partial class WorkbookImport
         var mapped = new List<CheckVoucherHeader>();
         var lastNumber = await _dbContext.CheckVoucherHeaders.OrderByDescending(x => x.CheckVoucherHeaderNo)
             .Select(x => x.CheckVoucherHeaderNo).FirstOrDefaultAsync(token);
-        await ImportDocumentsAsync(rows.OrderBy(x => x.Date).ThenBy(x => x.CreatedDate), row => row.OriginalSeriesNumber,
+        await ImportDocumentsAsync(worksheet, rows.OrderBy(x => x.Date).ThenBy(x => x.CreatedDate), row => row.OriginalSeriesNumber,
             lookup.ExistingCheckVoucherHeader,
             row =>
             {

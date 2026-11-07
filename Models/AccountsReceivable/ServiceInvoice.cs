@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -84,5 +84,60 @@ namespace Accounting_System.Models.AccountsReceivable
         //Ibs records
         public int? OriginalCustomerId { get; set; }
         public int? OriginalServicesId { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwtPercent { get; set; } = 0.01m;
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwVatPercent { get; set; } = 0.05m;
+
+        [StringLength(200)]
+        public string CustomerName { get; set; } = "";
+
+        [StringLength(200)]
+        public string CustomerAddress { get; set; } = "";
+
+        [StringLength(20)]
+        public string CustomerTin { get; set; } = "";
+
+        [StringLength(200)]
+        public string? CustomerBusinessStyle { get; set; }
+
+        [StringLength(100)]
+        public string ServiceName { get; set; } = "";
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal ServicePercent { get; set; }
+
+        [StringLength(20)]
+        public string PaymentStatus { get; set; } = "Pending";
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwtBalance { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwVatBalance { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwtAmountPaid { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwVatAmountPaid { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal DebitAmount { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CreditAmount { get; set; }
+
+
+        [StringLength(20)]
+        public string VatType { get; set; } = "";
+
+        public bool HasEwt { get; set; }
+
+        public bool HasWvat { get; set; }
+
+        public int? DeliveryReceiptId { get; set; }
     }
 }

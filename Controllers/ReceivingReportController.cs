@@ -212,6 +212,7 @@ namespace Accounting_System.Controllers
                 #endregion --Audit Trail Recording
 
                 await _dbContext.AddAsync(model, cancellationToken);
+                await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
                 await _dbContext.SaveChangesAsync(cancellationToken);
 
                 return RedirectToAction(nameof(Index));
@@ -300,6 +301,11 @@ namespace Accounting_System.Controllers
                     existingModel.OtherRef = model.OtherRef;
                     existingModel.Remarks = model.Remarks;
                     existingModel.ReceivedDate = model.ReceivedDate;
+                    existingModel.SupplierDrNo = model.SupplierDrNo;
+                    existingModel.WithdrawalCertificate = model.WithdrawalCertificate;
+                    existingModel.AuthorityToLoadNo = model.AuthorityToLoadNo;
+                    existingModel.OldRRNo = model.OldRRNo;
+                    existingModel.CostBasedOnSoa = model.CostBasedOnSoa;
                     existingModel.Amount = model.QuantityReceived * po.Price;
 
                     if (_dbContext.ChangeTracker.HasChanges())
@@ -314,6 +320,8 @@ namespace Accounting_System.Controllers
                         }
 
                         #endregion --Audit Trail Recording
+
+                        await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
 
                         await _dbContext.SaveChangesAsync(cancellationToken);
                         TempData["success"] = "Receiving Report updated successfully";
@@ -812,6 +820,9 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[index + 2, 12].Value = supplier?.TaxType == CS.TaxType_WithTax ? net * (supplier.WithholdingTaxPercent ?? 0) / 100m : 0m;
                     worksheet.Cells[index + 2, 34].Value = supplier?.SupplierName;
                 }
+
+                TransactionColumns.Export(worksheet, selectedList);
+                TransactionColumns.Export(worksheet2, selectedList.Where(x => x.PurchaseOrder != null).Select(x => x.PurchaseOrder!));
 
                 var excelBytes = await package.GetAsByteArrayAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);

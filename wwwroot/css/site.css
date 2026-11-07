@@ -655,3 +655,13 @@ body.loading {
     overflow: hidden;
 }
 /* Spinner styles end of code */
+
+.document-grid {
+    border-collapse: collapse;
+}
+
+.document-grid,
+.document-grid th,
+.document-grid td {
+    border: 1px solid #000;
+}

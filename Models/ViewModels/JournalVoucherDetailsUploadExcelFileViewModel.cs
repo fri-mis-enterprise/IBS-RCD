@@ -1,3 +1,4 @@
+using Accounting_System.Models.MasterFile;
 namespace Accounting_System.Models.ViewModels
 {
     public class JournalVoucherDetailsUploadExcelFileViewModel
@@ -15,5 +16,11 @@ namespace Accounting_System.Models.ViewModels
         public int JournalVoucherHeaderId { get; set; }
 
         public int OriginalDocumentId { get; set; }
+
+        public SubAccountType? SubAccountType { get; set; }
+
+        public int? SubAccountId { get; set; }
+
+        public string? SubAccountName { get; set; }
     }
 }

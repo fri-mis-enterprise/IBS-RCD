@@ -1,4 +1,4 @@
-﻿@model CollectionReceipt
+@model CollectionReceipt
 @using Accounting_System.Models.AccountsReceivable
 @using Microsoft.AspNetCore.Identity
 @inject UserManager<IdentityUser> UserManager
@@ -397,7 +397,9 @@ else
 }
 <a asp-action="CollectionIndex" class="btn" style="margin-top: 25px;" id="otherButton">Back</a>
 
+<partial name="_BankInformation" model="Model"/>
 @section Scripts {
+    <script src="~/js/receipt-bank-information.js" asp-append-version="true"></script>
     <script>
         let originalFontSizes = [];
 

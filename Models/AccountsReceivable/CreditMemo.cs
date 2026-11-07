@@ -80,5 +80,20 @@ namespace Accounting_System.Models.AccountsReceivable
         //Ibs records
         public int? OriginalSalesInvoiceId { get; set; }
         public int? OriginalServiceInvoiceId { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwtAmount { get; set; }
+
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal CwVatAmount { get; set; }
+
+        [StringLength(50)]
+        public string Status { get; set; } = "Pending";
+
+
+        public string? ApprovedBy { get; set; }
+
+        [Column(TypeName = "timestamp without time zone")]
+        public DateTime? ApprovedDate { get; set; }
     }
 }

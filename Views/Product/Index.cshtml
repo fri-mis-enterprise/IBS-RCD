@@ -1,4 +1,4 @@
-﻿@using Accounting_System.Models.MasterFile
+@using Accounting_System.Models.MasterFile
 @model IEnumerable<Product>
 
 @{
@@ -43,7 +43,7 @@
                     <th>
                         @Html.DisplayNameFor(model => model.CreatedDate)
                     </th>
-                    <th></th>
+                    <th>Is Active</th><th></th>
                 </tr>
             </thead>
             <tbody>
@@ -64,7 +64,8 @@
                         </td>
                         <td>
                             @item.CreatedDate.ToString("MM/dd/yyyy")
-                        </td>
+                        </td><td>@item.IsActive</td>
+
                         <td>
                             <a asp-action="Edit" class="btn btn-light" asp-route-id="@item.ProductId">Edit</a>
                         </td>

@@ -1,4 +1,4 @@
-﻿@model IEnumerable<Accounting_System.Models.ChartOfAccount>
+@model IEnumerable<Accounting_System.Models.ChartOfAccount>
 
 @{
     ViewData["Title"] = "Chart of Account";
@@ -41,7 +41,7 @@
                     <th>
                         @Html.DisplayNameFor(model => model.Level)
                     </th>
-                    <th></th>
+                    <th>Financial Statement Type</th><th>Is Hidden</th><th></th>
                 </tr>
             </thead>
             <tbody>
@@ -62,7 +62,8 @@
                         </td>
                         <td>
                             @Html.DisplayFor(modelItem => item.Level)
-                        </td>
+                        </td><td>@item.FinancialStatementType</td><td>@item.IsHidden</td>
+
                         <td>
                             <a asp-action="Edit" class="btn btn-light" asp-route-id="@item.AccountId">Edit</a>
                         </td>

@@ -1,10 +1,12 @@
-﻿@using Accounting_System.Models.AccountsPayable
-@model ReceivingReport
+@model Accounting_System.Models.AccountsPayable.ReceivingReport
 
 @{
-    ViewData["Title"] = "EDIT RECEIVING REPORT";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Receiving Report - Edit";
+    var isPosted = Model.PostedBy != null;
 }
+
+<link rel="stylesheet" href="~/css/form-style.css">
+
 <div class="loader-container">
     <div class="loader"></div>
     <div class="loader-text">Loading...</div>
@@ -18,64 +20,98 @@
         </div>
     </div>
     <div class="card-body p-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <form method="post" asp-action="Edit">
+            @Html.AntiForgeryToken()
             <input asp-for="ReceivingReportId" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
             <div class="form-group mb-3">
                 <label asp-for="Date" class="control-label">Date</label>
-                <input asp-for="Date" type="date" class="@(Model.IsPosted ? "form-control bg-light" : "form-control")" readonly="@Model.IsPosted" />
+                <input asp-for="Date" type="date" class="form-control" readonly="@isPosted" tabindex="@(isPosted ? "-1" : null)" />
                 <span asp-validation-for="Date" class="text-danger"></span>
             </div>
+
             <div class="form-group mb-3">
                 <label asp-for="POId" class="control-label">Suppliers PO No.</label>
-                <select asp-for="POId" class="form-control js-select2" asp-items="@Model.PurchaseOrders" disabled="@Model.IsPosted" readonly="@Model.IsPosted"></select>
-                <input type="hidden" asp-for="POId" />
+                <select asp-for="POId" class="form-control js-select2" asp-items="@Model.PurchaseOrders" disabled="@isPosted"></select>
+                @if (isPosted)
+                {
+                    <input type="hidden" asp-for="POId" />
+                }
             </div>
+
             <div class="form-floating mb-3">
-                <input asp-for="ReceivedDate" type="date" class="@(Model.IsPosted ? "form-control bg-light" : "form-control")" placeholder="" readonly="@Model.IsPosted" />
+                <input asp-for="ReceivedDate" type="date" class="form-control" placeholder="" readonly="@isPosted" tabindex="@(isPosted ? "-1" : null)" />
                 <label asp-for="ReceivedDate" class="control-label">Received Date</label>
                 <span asp-validation-for="ReceivedDate" class="text-danger"></span>
             </div>
-            <div class="form-group mb-3">
-                <label asp-for="SupplierInvoiceNumber" class="control-label"></label>
-                <input asp-for="SupplierInvoiceNumber" class="form-control" />
-                <span asp-validation-for="SupplierInvoiceNumber" class="text-danger"></span>
+
+            <fieldset class="border p-2 py-2 mb-3">
+                <legend class="w-auto px-2">Supplier Details</legend>
+                <div class="form-floating py-2 col-12">
+                    <input asp-for="SupplierInvoiceNumber" class="form-control border-0 shadow" placeholder="" />
+                    <label asp-for="SupplierInvoiceNumber">SI#</label>
+                    <span asp-validation-for="SupplierInvoiceNumber" class="text-danger"></span>
+                </div>
+                <div class="form-floating py-2 col-12">
+                    <input asp-for="SupplierInvoiceDate" type="date" class="form-control border-0 shadow" placeholder="" />
+                    <label asp-for="SupplierInvoiceDate">SI / Lifting Date</label>
+                    <span asp-validation-for="SupplierInvoiceDate" class="text-danger"></span>
+                </div>
+                <div class="form-floating py-2 col-12">
+                    <input asp-for="SupplierDrNo" class="form-control border-0 shadow" placeholder="" />
+                    <label asp-for="SupplierDrNo">DR#</label>
+                    <span asp-validation-for="SupplierDrNo" class="text-danger"></span>
+                </div>
+            </fieldset>
+            <div class="form-floating mb-3">
+                <input asp-for="WithdrawalCertificate" class="form-control" placeholder="" />
+                <label asp-for="WithdrawalCertificate" class="control-label">WC Certificate</label>
+                <span asp-validation-for="WithdrawalCertificate" class="text-danger"></span>
             </div>
-            <div class="form-group mb-3">
-                <label asp-for="SupplierInvoiceDate" class="control-label"></label>
-                <input asp-for="SupplierInvoiceDate" type="date" class="form-control" />
-                <span asp-validation-for="SupplierInvoiceDate" class="text-danger"></span>
+            <div class="form-floating mb-3">
+                <input asp-for="CostBasedOnSoa" value="@Model.CostBasedOnSoa" class="form-control" placeholder="" />
+                <label asp-for="CostBasedOnSoa" class="control-label">Cost (Based on SOA)</label>
+                <span asp-validation-for="CostBasedOnSoa" class="text-danger"></span>
             </div>
-            <div class="form-group mb-3">
+            <div class="form-floating mb-3">
+                <input asp-for="TruckOrVessels" class="form-control" placeholder="" />
                 <label asp-for="TruckOrVessels" class="control-label">Truck/Vessels</label>
-                <input asp-for="TruckOrVessels" class="form-control" />
                 <span asp-validation-for="TruckOrVessels" class="text-danger"></span>
             </div>
             <div class="form-group mb-3">
                 <label asp-for="QuantityDelivered" class="control-label">Qty Delivered</label>
-                <input asp-for="QuantityDelivered" class="form-control" value="@Model.QuantityDelivered" disabled="@Model.IsPosted" readonly="@Model.IsPosted" />
-                <input type="hidden" asp-for="QuantityDelivered" />
+                <input asp-for="QuantityDelivered" class="form-control" readonly="@isPosted" tabindex="@(isPosted ? "-1" : null)" />
+                @if (isPosted)
+                {
+                    <input type="hidden" asp-for="QuantityDelivered" />
+                }
             </div>
             <div class="form-group mb-3">
                 <label asp-for="QuantityReceived" class="control-label">Qty Received</label>
-                <input asp-for="QuantityReceived" class="form-control" value="@Model.QuantityReceived" disabled="@Model.IsPosted" readonly="@Model.IsPosted" />
-                <input type="hidden" asp-for="QuantityReceived" />
+                <input asp-for="QuantityReceived" class="form-control" readonly="@isPosted" tabindex="@(isPosted ? "-1" : null)" />
+                @if (isPosted)
+                {
+                    <input type="hidden" asp-for="QuantityReceived" />
+                }
             </div>
-            <div class="form-group mb-3">
-                <label asp-for="OtherRef" class="control-label"></label>
-                <input asp-for="OtherRef" class="form-control" />
-                <span asp-validation-for="OtherRef" class="text-danger"></span>
+            <div class="form-floating mb-3">
+                <input asp-for="AuthorityToLoadNo" class="form-control" placeholder="" readonly="@isPosted" tabindex="@(isPosted ? "-1" : null)" />
+                <label asp-for="AuthorityToLoadNo" class="control-label ms-2"></label>
+                <span asp-validation-for="AuthorityToLoadNo" class="text-danger"></span>
             </div>
-            <div class="form-group mb-3">
-                <label asp-for="Remarks" class="control-label">Remarks</label>
-                <textarea asp-for="Remarks" class="form-control" style="height: 100px"></textarea>
+            <div class="form-floating mb-3">
+                <textarea asp-for="Remarks" class="form-control" placeholder="" style="height: 100px"></textarea>
+                <label asp-for="Remarks" class="control-label ms-2">Remarks</label>
+                <span asp-validation-for="Remarks" class="text-danger"></span>
             </div>
+
             <div class="row pt-2">
                 <div class="col-6 col-md-3">
                     <button type="submit" class="btn btn-primary form-control">Save</button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <a asp-controller="ReceivingReport" asp-action="Index" class="btn btn-outline-primary border  form-control ">Back to List</a>
+                    <a  asp-controller="ReceivingReport" asp-action="Index" asp-route-filterType="@ViewBag.FilterType" class="btn btn-outline-primary border  form-control ">Back to List</a>
                 </div>
             </div>
         </form>

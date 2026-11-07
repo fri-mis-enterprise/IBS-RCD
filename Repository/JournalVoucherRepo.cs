@@ -403,6 +403,11 @@ namespace Accounting_System.Repository
                     Credit = sheet.Value<decimal>(row, "Credit"),
                     JournalVoucherHeaderId = sheet.Value<int>(row, "JVHeaderId", "JournalVoucherHeaderId"),
                     OriginalDocumentId = sheet.Value<int>(row, "OriginalDocumentId"),
+                    SubAccountType = sheet.HasColumn("SubAccountType") && !string.IsNullOrWhiteSpace(sheet.Text(row, "SubAccountType"))
+                        && Enum.TryParse<Accounting_System.Models.MasterFile.SubAccountType>(sheet.Text(row, "SubAccountType"), true, out var jvSubType) ? jvSubType : null,
+                    SubAccountId = sheet.HasColumn("SubAccountId") && !string.IsNullOrWhiteSpace(sheet.Text(row, "SubAccountId"))
+                        ? int.TryParse(sheet.Text(row, "SubAccountId"), out var jvSubId) ? jvSubId : null : null,
+                    SubAccountName = sheet.HasColumn("SubAccountName") ? sheet.Text(row, "SubAccountName") : null,
                 });
             }
 
@@ -477,7 +482,10 @@ namespace Accounting_System.Repository
                 Debit = row.Debit,
                 Credit = row.Credit,
                 OriginalDocumentId = row.OriginalDocumentId,
-                JournalVoucherHeaderId = journalVoucherHeader.JournalVoucherHeaderId
+                JournalVoucherHeaderId = journalVoucherHeader.JournalVoucherHeaderId,
+                SubAccountType = row.SubAccountType,
+                SubAccountId = row.SubAccountId,
+                SubAccountName = row.SubAccountName
             };
         }
 
@@ -510,6 +518,15 @@ namespace Accounting_System.Repository
 
             _generalRepo.Compare(changes, logs, "JournalVoucherHeaderId",
                 (entity.JournalVoucherHeader?.OriginalDocumentId ?? 0).ToString(), row.JournalVoucherHeaderId.ToString());
+            _generalRepo.Compare(changes, logs, "SubAccountType",
+                entity.SubAccountType?.ToString() ?? "null",
+                row.SubAccountType?.ToString() ?? "null");
+            _generalRepo.Compare(changes, logs, "SubAccountId",
+                entity.SubAccountId?.ToString() ?? "null",
+                row.SubAccountId?.ToString() ?? "null");
+            _generalRepo.Compare(changes, logs, "SubAccountName",
+                StringHelper.NormalizeString(entity.SubAccountName),
+                StringHelper.NormalizeString(row.SubAccountName));
             _generalRepo.Compare(changes, logs, "TransactionNo",
                 StringHelper.NormalizeString(entity.JournalVoucherHeader?.OriginalSeriesNumber ?? entity.TransactionNo), StringHelper.NormalizeString(row.TransactionNo));
 
@@ -524,7 +541,7 @@ namespace Accounting_System.Repository
             var ledgers = new List<GeneralLedgerBook>();
             foreach (var details in modelDetails)
             {
-                var account = accountTitlesDto.Find(c => c.AccountNumber == details.AccountNo) ?? throw new ArgumentException($"Account number '{details.AccountNo}', Account title '{details.AccountName}' not found.");
+                var account = accountTitlesDto.Find(c => c.AccountNumber == details.AccountNo) ?? throw new ArgumentException($"Account number '{details.AccountNo}', Account title '{details.AccountName}' not found. The account is missing from RCD ChartOfAccounts, or is a parent/hidden account. Upload the ChartOfAccount master file to RCD first, then re-upload the voucher.");
                 ledgers.Add(
                         new GeneralLedgerBook
                         {

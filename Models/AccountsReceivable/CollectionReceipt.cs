@@ -140,5 +140,63 @@ namespace Accounting_System.Models.AccountsReceivable
         public int? OriginalSalesInvoiceId { get; set; }
         public int? OriginalServiceInvoiceId { get; set; }
         public int? OriginalCustomerId { get; set; }
+
+        public int[]? MultipleSVId { get; set; }
+
+        public string[]? MultipleSV { get; set; }
+
+        public int? BankId { get; set; }
+
+        [StringLength(50)]
+        public string? BankAccountName { get; set; }
+
+        [StringLength(30)]
+        public string? BankAccountNumber { get; set; }
+
+        [Column(TypeName = "date")]
+        public DateOnly? EwtPeriodFrom { get; set; }
+
+        [Column(TypeName = "date")]
+        public DateOnly? EwtPeriodTo { get; set; }
+
+        [StringLength(50)]
+        public string? EwtReference1 { get; set; }
+
+        [StringLength(50)]
+        public string? EwtReference2 { get; set; }
+
+        [Column(TypeName = "date")]
+        public DateOnly? CwVatPeriodFrom { get; set; }
+
+        [Column(TypeName = "date")]
+        public DateOnly? CwVatPeriodTo { get; set; }
+
+        [StringLength(50)]
+        public string? CwVatReference1 { get; set; }
+
+        [StringLength(50)]
+        public string? CwVatReference2 { get; set; }
+
+        [StringLength(100)]
+        public string? F2306FileName { get; set; }
+
+        [StringLength(100)]
+        public string? F2307FileName { get; set; }
+
+        [Column(TypeName = "numeric[]")]
+        public decimal[]? SVMultipleAmount { get; set; }
+
+        [StringLength(50)]
+        public string Status { get; set; } = "Pending";
+
+
+        [Column(TypeName = "date")]
+        public DateOnly? DepositedDate { get; set; }
+
+        [Column(TypeName = "date")]
+        public DateOnly? ClearedDate { get; set; }
+
+        [StringLength(50)]
+        public string? BatchNumber { get; set; }
     }
 }

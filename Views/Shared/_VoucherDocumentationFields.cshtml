@@ -1,0 +1,26 @@
+@model Accounting_System.Models.ViewModels.CheckVoucherDocumentationViewModel
+<fieldset class="border p-3 mb-3 voucher-documentation">
+    <legend class="float-none w-auto px-2 fs-6">Documentation</legend>
+    @if (Model.HasSupportingDocument)
+    {
+        <a asp-action="SupportingDocument" asp-route-id="@Model.VoucherId" class="d-block mb-3">Download supporting document</a>
+    }
+    <div class="form-floating mb-3">
+        <input asp-for="OldCVNo" class="form-control" placeholder="" />
+        <label asp-for="OldCVNo">Old CV #</label>
+        <span asp-validation-for="OldCVNo" class="text-danger"></span>
+    </div>
+    <div class="form-check mb-3">
+        <input asp-for="IsDocumentedByOtherCompany" class="form-check-input documenting-company-toggle" />
+        <label asp-for="IsDocumentedByOtherCompany" class="form-check-label">Documented by another company?</label>
+    </div>
+    <div class="form-floating mb-3 documenting-company-fields">
+        <input asp-for="DocumentedByCompanyName" class="form-control" placeholder="" />
+        <label asp-for="DocumentedByCompanyName">Documenting Company</label>
+        <span asp-validation-for="DocumentedByCompanyName" class="text-danger"></span>
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3"><label asp-for="DcpDate">DCP Date</label><input asp-for="DcpDate" type="date" class="form-control"/></div>
+        <div class="col-md-6 mb-3"><label asp-for="DcrDate">DCR Date</label><input asp-for="DcrDate" type="date" class="form-control"/></div>
+    </div>
+</fieldset>

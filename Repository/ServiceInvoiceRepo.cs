@@ -1,3 +1,4 @@
+using System.Globalization;
 using Accounting_System.Data;
 using Accounting_System.DTOs;
 using Accounting_System.Models;
@@ -152,6 +153,8 @@ namespace Accounting_System.Repository
                     UnearnedAmount = sheet.Value<decimal>(row, "UnearnedAmount"),
                     Status = sheet.Text(row, "Status"),
                     Instructions = sheet.Text(row, "Instructions"),
+                    CwtPercent = sheet.HasColumn("CwtPercent") ? sheet.Value<decimal>(row, "CwtPercent") : 0.01m,
+                    CwVatPercent = sheet.HasColumn("CwVatPercent") ? sheet.Value<decimal>(row, "CwVatPercent") : 0.05m,
                     CreatedBy = sheet.Text(row, "CreatedBy"),
                     CreatedDate = sheet.Date(row, "CreatedDate", true),
                     PostedBy = sheet.Text(row, "PostedBy"),
@@ -223,6 +226,8 @@ namespace Accounting_System.Repository
                 UnearnedAmount = row.UnearnedAmount,
                 Status = row.Status,
                 Instructions = row.Instructions,
+                CwtPercent = row.CwtPercent,
+                CwVatPercent = row.CwVatPercent,
                 CreatedBy = row.CreatedBy,
                 CreatedDate = row.CreatedDate,
 
@@ -330,6 +335,8 @@ namespace Accounting_System.Repository
         {
             var changes = new Dictionary<string, (string, string)>();
 
+            _generalRepo.Compare(changes, logs, "CwtPercent", entity.CwtPercent.ToString("0.0000", CultureInfo.InvariantCulture), row.CwtPercent.ToString("0.0000", CultureInfo.InvariantCulture));
+            _generalRepo.Compare(changes, logs, "CwVatPercent", entity.CwVatPercent.ToString("0.0000", CultureInfo.InvariantCulture), row.CwVatPercent.ToString("0.0000", CultureInfo.InvariantCulture));
             _generalRepo.Compare(changes, logs, "ServiceInvoiceNo",
                 StringHelper.NormalizeString(entity.ServiceInvoiceNo),
                 row.ServiceInvoiceNo);
@@ -474,7 +481,7 @@ namespace Accounting_System.Repository
             decimal netOfVatAmount;
             decimal vatAmount = 0;
 
-            if (customer!.CustomerType == CS.VatType_Vatable)
+            if (customer!.VatType == CS.VatType_Vatable)
             {
                 netOfVatAmount = _generalRepo.ComputeNetOfVat(row.Total);
                 vatAmount = _generalRepo.ComputeVatAmount(netOfVatAmount);
@@ -486,7 +493,7 @@ namespace Accounting_System.Repository
 
             var sales = new SalesBook();
 
-            if (customer.CustomerType == "Vatable")
+            if (customer.VatType == "Vatable")
             {
                 sales.TransactionDate = postedDate;
                 sales.SerialNo = row.ServiceInvoiceNo!;
@@ -504,7 +511,7 @@ namespace Accounting_System.Repository
                 sales.DueDate = row.DueDate;
                 sales.DocumentId = serviceInvoice?.ServiceInvoiceId;
             }
-            else if (customer.CustomerType == "Exempt")
+            else if (customer.VatType == "Exempt")
             {
                 sales.TransactionDate = postedDate;
                 sales.SerialNo = row.ServiceInvoiceNo!;
@@ -554,7 +561,7 @@ namespace Accounting_System.Repository
             decimal netOfVatAmount;
             decimal vatAmount = 0;
 
-            if (customer!.CustomerType == CS.VatType_Vatable)
+            if (customer!.VatType == CS.VatType_Vatable)
             {
                 netOfVatAmount = _generalRepo.ComputeNetOfVat(row.Total);
                 vatAmount = _generalRepo.ComputeVatAmount(netOfVatAmount);
@@ -566,12 +573,12 @@ namespace Accounting_System.Repository
 
             if (customer.WithHoldingTax)
             {
-                withHoldingTaxAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m);
+                withHoldingTaxAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, row.CwtPercent);
             }
 
             if (customer.WithHoldingVat)
             {
-                withHoldingVatAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.05m);
+                withHoldingVatAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, row.CwVatPercent);
             }
 
             var postedDate = DateOnly.FromDateTime(row.CreatedDate) >= row.Period ? DateOnly.FromDateTime(row.CreatedDate) : row.Period.AddMonths(1).AddDays(-1);

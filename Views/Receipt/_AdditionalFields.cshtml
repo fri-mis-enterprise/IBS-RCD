@@ -1,0 +1,17 @@
+@model Accounting_System.Models.AccountsReceivable.CollectionReceipt
+<div class="form-floating mb-3"><input asp-for="BatchNumber" class="form-control" placeholder=""/><label asp-for="BatchNumber">Batch #</label><span asp-validation-for="BatchNumber" class="text-danger"></span></div>
+<fieldset class="border p-3 mb-3">
+    <legend class="float-none w-auto px-2 fs-6">Withholding Certificate References</legend>
+    <div class="row">
+        <div class="col-md-3 mb-3"><label asp-for="EwtPeriodFrom">EWT Period From</label><input asp-for="EwtPeriodFrom" type="date" class="form-control"/></div>
+        <div class="col-md-3 mb-3"><label asp-for="EwtPeriodTo">EWT Period To</label><input asp-for="EwtPeriodTo" type="date" class="form-control"/></div>
+        <div class="col-md-3 mb-3"><label asp-for="EwtReference1">EWT Reference 1</label><input asp-for="EwtReference1" class="form-control"/><span asp-validation-for="EwtReference1" class="text-danger"></span></div>
+        <div class="col-md-3 mb-3"><label asp-for="EwtReference2">EWT Reference 2</label><input asp-for="EwtReference2" class="form-control"/><span asp-validation-for="EwtReference2" class="text-danger"></span></div>
+    </div>
+    <div class="row">
+        <div class="col-md-3 mb-3"><label asp-for="CwVatPeriodFrom">WVAT Period From</label><input asp-for="CwVatPeriodFrom" type="date" class="form-control"/></div>
+        <div class="col-md-3 mb-3"><label asp-for="CwVatPeriodTo">WVAT Period To</label><input asp-for="CwVatPeriodTo" type="date" class="form-control"/></div>
+        <div class="col-md-3 mb-3"><label asp-for="CwVatReference1">WVAT Reference 1</label><input asp-for="CwVatReference1" class="form-control"/><span asp-validation-for="CwVatReference1" class="text-danger"></span></div>
+        <div class="col-md-3 mb-3"><label asp-for="CwVatReference2">WVAT Reference 2</label><input asp-for="CwVatReference2" class="form-control"/><span asp-validation-for="CwVatReference2" class="text-danger"></span></div>
+    </div>
+</fieldset>

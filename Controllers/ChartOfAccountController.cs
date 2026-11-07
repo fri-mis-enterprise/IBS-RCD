@@ -133,6 +133,7 @@ namespace Accounting_System.Controllers
                             return NotFound();
                         }
 
+                        chartOfAccount.FinancialStatementType = existingCoa.FinancialStatementType;
                         chartOfAccount.AccountType = existingCoa.AccountType;
                         chartOfAccount.NormalBalance = existingCoa.NormalBalance;
                         chartOfAccount.Level = existingCoa.Level + 1;
@@ -150,6 +151,7 @@ namespace Accounting_System.Controllers
                             return NotFound();
                         }
 
+                        chartOfAccount.FinancialStatementType = existingCoa.FinancialStatementType;
                         chartOfAccount.AccountType = existingCoa.AccountType;
                         chartOfAccount.NormalBalance = existingCoa.NormalBalance;
                         chartOfAccount.Level = existingCoa.Level + 1;
@@ -212,6 +214,8 @@ namespace Accounting_System.Controllers
                         existingModel.AccountType = chartOfAccount.AccountType;
                         existingModel.NormalBalance = chartOfAccount.NormalBalance;
                         existingModel.Level = chartOfAccount.Level;
+                    existingModel.IsHidden = chartOfAccount.IsHidden;
+                    existingModel.FinancialStatementType = chartOfAccount.FinancialStatementType;
                         existingModel.AccountId = chartOfAccount.AccountId;
 
                         if (_dbContext.ChangeTracker.HasChanges())
@@ -320,6 +324,10 @@ namespace Accounting_System.Controllers
                 worksheet.Cells["L1"].Value = "ParentAccountId";
                 worksheet.Cells["M1"].Value = "OriginalChartOfAccount";
 
+                var addedHeaders = new[] { "IsHidden", "FinancialStatementType", "Parent" };
+                var addedStartColumn = worksheet.Dimension.Columns + 1;
+                for (var c = 0; c < addedHeaders.Length; c++) worksheet.Cells[1, addedStartColumn + c].Value = addedHeaders[c];
+
                 int row = 2;
 
                 foreach (var item in selectedList)
@@ -338,6 +346,8 @@ namespace Accounting_System.Controllers
                     worksheet.Cells[row, 12].Value = item.ParentAccountId;
                     worksheet.Cells[row, 13].Value = item.AccountId;
 
+                    object?[] addedValues = [item.IsHidden, item.FinancialStatementType, item.Parent];
+                    for (var c = 0; c < addedValues.Length; c++) worksheet.Cells[row, addedStartColumn + c].Value = addedValues[c];
                     row++;
                 }
 

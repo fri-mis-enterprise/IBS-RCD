@@ -1,4 +1,5 @@
-﻿@using Accounting_System.Models.AccountsReceivable
+<link rel="stylesheet" href="~/css/form-style.css" asp-append-version="true"/>
+@using Accounting_System.Models.AccountsReceivable
 @model SalesInvoice
 
 @{
@@ -45,7 +46,7 @@
 
                         <div class="form-group mb-3">
                             <label class="control-label">Customer Type</label>
-                            <input id="customerType" class="form-control" value="@Model.Customer?.CustomerType" readonly disabled />
+                            <input id="customerType" class="form-control" value="@Model.Customer?.VatType" readonly disabled />
                         </div>
 
                         <div class="form-group mb-3">
@@ -247,7 +248,7 @@
 
             let receivingReportId = $("#ReceivingReportId");
             let transactionDate = $("input[name='TransactionDate']");
-            
+
             $(".GetRRList").change(function () {
                 let purchaseOrderId = $(this).val();
                 if (purchaseOrderId !== "") {

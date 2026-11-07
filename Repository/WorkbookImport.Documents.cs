@@ -1,4 +1,4 @@
-﻿using Accounting_System.Models;
+using Accounting_System.Models;
 using Accounting_System.Models.AccountsPayable;
 using Accounting_System.Models.AccountsReceivable;
 using Accounting_System.Models.Reports;
@@ -13,7 +13,7 @@ public partial class WorkbookImport
     {
         var rows = _purchaseOrderRepo.ParseWorksheet(worksheet);
         var lookup = await _purchaseOrderRepo.BuildLookupPurchaseOrderContextAsync(rows, cancellationToken);
-        await ImportDocumentsAsync(rows, row => row.OriginalSeriesNumber, lookup.ExistingPurchaseOrder,
+        await ImportDocumentsAsync(worksheet, rows, row => row.OriginalSeriesNumber, lookup.ExistingPurchaseOrder,
             row => _purchaseOrderRepo.MapToPurchaseOrderEntity(row, lookup),
             (entity, row) => _purchaseOrderRepo.Detect(entity, row, lookup.ExistingLogs),
             _purchaseOrderRepo.LogChangesAsync, _purchaseOrderRepo.AuditTrails,
@@ -24,7 +24,14 @@ public partial class WorkbookImport
     {
         var rows = _salesInvoiceRepo.ParseWorksheet(worksheet);
         var lookup = await _salesInvoiceRepo.BuildLookupSalesInvoiceContextAsync(rows, cancellationToken);
-        await ImportDocumentsAsync(rows, row => row.OriginalSeriesNumber, lookup.ExistingInvoices,
+        var columns = new Accounting_System.Utility.ImportWorksheet(worksheet);
+        foreach (var row in rows)
+            if (lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var invoice))
+            {
+                if (!columns.HasColumn("CwtPercent")) row.CwtPercent = invoice.CwtPercent;
+                if (!columns.HasColumn("CwVatPercent")) row.CwVatPercent = invoice.CwVatPercent;
+            }
+        await ImportDocumentsAsync(worksheet, rows, row => row.OriginalSeriesNumber, lookup.ExistingInvoices,
             row => _salesInvoiceRepo.MapToSalesInvoiceEntity(row, lookup),
             (entity, row) => _salesInvoiceRepo.Detect(entity, row, lookup.ExistingLogs),
             _salesInvoiceRepo.LogChangesAsync, _salesInvoiceRepo.AuditTrails,
@@ -40,7 +47,14 @@ public partial class WorkbookImport
     {
         var rows = _serviceInvoiceRepo.ParseWorksheet(worksheet);
         var lookup = await _serviceInvoiceRepo.BuildLookupServiceInvoiceContextAsync(rows, cancellationToken);
-        await ImportDocumentsAsync(rows, row => row.OriginalSeriesNumber, lookup.ExistingInvoices,
+        var columns = new Accounting_System.Utility.ImportWorksheet(worksheet);
+        foreach (var row in rows)
+            if (lookup.ExistingInvoices.TryGetValue(row.OriginalSeriesNumber, out var invoice))
+            {
+                if (!columns.HasColumn("CwtPercent")) row.CwtPercent = invoice.CwtPercent;
+                if (!columns.HasColumn("CwVatPercent")) row.CwVatPercent = invoice.CwVatPercent;
+            }
+        await ImportDocumentsAsync(worksheet, rows, row => row.OriginalSeriesNumber, lookup.ExistingInvoices,
             row => _serviceInvoiceRepo.MapToServiceInvoiceEntity(row, lookup),
             (entity, row) => _serviceInvoiceRepo.Detect(entity, row, lookup.ExistingLogs),
             _serviceInvoiceRepo.LogChangesAsync, _serviceInvoiceRepo.AuditTrails,
@@ -55,7 +69,7 @@ public partial class WorkbookImport
     {
         var rows = _receivingReportRepo.ParseWorksheet(worksheet);
         var lookup = await _receivingReportRepo.BuildLookupReceivingReportContextAsync(rows, cancellationToken);
-        await ImportDocumentsAsync(rows, row => row.OriginalSeriesNumber, lookup.ExistingReceivingReport,
+        await ImportDocumentsAsync(worksheet, rows, row => row.OriginalSeriesNumber, lookup.ExistingReceivingReport,
             row => _receivingReportRepo.MapToReceivingReportEntity(row, lookup),
             (entity, row) => _receivingReportRepo.Detect(entity, row, lookup.ExistingLogs),
             _receivingReportRepo.LogChangesAsync, _receivingReportRepo.AuditTrails,
@@ -72,7 +86,7 @@ public partial class WorkbookImport
     {
         var rows = _receiptRepo.ParseWorksheet(worksheet);
         var lookup = await _receiptRepo.BuildLookupCollectionReceiptContextAsync(rows, cancellationToken);
-        await ImportDocumentsAsync(rows, row => row.OriginalSeriesNumber, lookup.ExistingCollectionReceipt,
+        await ImportDocumentsAsync(worksheet, rows, row => row.OriginalSeriesNumber, lookup.ExistingCollectionReceipt,
             row => _receiptRepo.MapToCollectionReceiptEntity(row, lookup),
             (entity, row) => _receiptRepo.Detect(entity, row, lookup.ExistingLogs),
             _receiptRepo.LogChangesAsync, _receiptRepo.AuditTrails,
@@ -93,7 +107,7 @@ public partial class WorkbookImport
     {
         var rows = _creditMemoRepo.ParseWorksheet(worksheet);
         var lookup = await _creditMemoRepo.BuildLookupCreditMemoContextAsync(rows, cancellationToken);
-        await ImportDocumentsAsync(rows, row => row.OriginalSeriesNumber, lookup.ExistingCreditMemo,
+        await ImportDocumentsAsync(worksheet, rows, row => row.OriginalSeriesNumber, lookup.ExistingCreditMemo,
             row => _creditMemoRepo.MapToCreditMemoEntity(row, lookup),
             (entity, row) => _creditMemoRepo.Detect(entity, row, lookup.ExistingLogs),
             _creditMemoRepo.LogChangesAsync, _creditMemoRepo.AuditTrails,
@@ -108,7 +122,7 @@ public partial class WorkbookImport
     {
         var rows = _debitMemoRepo.ParseWorksheet(worksheet);
         var lookup = await _debitMemoRepo.BuildLookupDebitMemoContextAsync(rows, cancellationToken);
-        await ImportDocumentsAsync(rows, row => row.OriginalSeriesNumber, lookup.ExistingDebitMemo,
+        await ImportDocumentsAsync(worksheet, rows, row => row.OriginalSeriesNumber, lookup.ExistingDebitMemo,
             row => _debitMemoRepo.MapToDebitMemoEntity(row, lookup),
             (entity, row) => _debitMemoRepo.Detect(entity, row, lookup.ExistingLogs),
             _debitMemoRepo.LogChangesAsync, _debitMemoRepo.AuditTrails,
@@ -123,7 +137,7 @@ public partial class WorkbookImport
     {
         var rows = _journalVoucherRepo.ParseWorksheet(worksheet);
         var lookup = await _journalVoucherRepo.BuildLookupCheckVoucherHeaderContextAsync(rows, cancellationToken);
-        await ImportDocumentsAsync(rows, row => row.OriginalSeriesNumber, lookup.ExistingJournalVoucherHeader,
+        await ImportDocumentsAsync(worksheet, rows, row => row.OriginalSeriesNumber, lookup.ExistingJournalVoucherHeader,
             row => _journalVoucherRepo.MapToJournalVoucherEntity(row, lookup),
             (entity, row) => _journalVoucherRepo.Detect(entity, row, lookup.ExistingLogs),
             _journalVoucherRepo.LogChangesAsync, _journalVoucherRepo.AuditTrails,

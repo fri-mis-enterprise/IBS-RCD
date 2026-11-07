@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -67,6 +67,7 @@ namespace Accounting_System.Models.MasterFile
         public string? TradeName { get; set; }
 
         [StringLength(20)]
+        [DisplayFormat(ConvertEmptyStringToNull = false)]
         public string Branch { get; set; }
 
         [StringLength(100)]
@@ -75,10 +76,15 @@ namespace Accounting_System.Models.MasterFile
         [NotMapped]
         public List<SelectListItem>? DefaultExpenses { get; set; }
 
-        public int? WithholdingTaxPercent { get; set; }
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal? WithholdingTaxPercent { get; set; }
 
         [StringLength(100)]
         public string? WithholdingTaxtitle { get; set; }
+
+        [NotMapped]
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string? WithholdingTaxTitle { get => WithholdingTaxtitle; set => WithholdingTaxtitle = value; }
 
         [NotMapped]
         public List<SelectListItem>? WithholdingTaxList { get; set; }
@@ -89,5 +95,35 @@ namespace Accounting_System.Models.MasterFile
         [Display(Name = "Zip Code")]
         [StringLength(10)]
         public string ZipCode { get; set; } = String.Empty;
+
+        [Display(Name = "Supplier Code")]
+        [StringLength(7)]
+        public string? SupplierCode { get; set; }
+
+        [StringLength(200)]
+        public string? ProofOfRegistrationFileName { get; set; }
+
+        [StringLength(200)]
+        public string? ProofOfExemptionFileName { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        [Display(Name = "Edited By")]
+        [StringLength(50)]
+        public string? EditedBy { get; set; }
+
+        [Display(Name = "Edited Date")]
+        [Column(TypeName = "timestamp without time zone")]
+        public DateTime? EditedDate { get; set; }
+
+        [StringLength(50)]
+        [Display(Name = "Employee Number")]
+        public string? EmployeeNumber { get; set; }
+
+        [Display(Name = "Requires Price Adjustment")]
+        public bool RequiresPriceAdjustment { get; set; }
+
+        [NotMapped]
+        public List<SelectListItem>? PaymentTerms { get; set; }
     }
 }

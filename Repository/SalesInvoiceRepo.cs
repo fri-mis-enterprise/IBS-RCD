@@ -1,3 +1,4 @@
+using System.Globalization;
 using Accounting_System.Data;
 using Accounting_System.DTOs;
 using Accounting_System.Models;
@@ -205,6 +206,8 @@ namespace Accounting_System.Repository
                     TransactionDate = DateOnly.FromDateTime(sheet.Date(row, "TransactionDate", true)),
                     DueDate = DateOnly.FromDateTime(sheet.Date(row, "DueDate", true)),
 
+                    CwtPercent = sheet.HasColumn("CwtPercent") ? sheet.Value<decimal>(row, "CwtPercent") : 0.01m,
+                    CwVatPercent = sheet.HasColumn("CwVatPercent") ? sheet.Value<decimal>(row, "CwVatPercent") : 0.05m,
                     CreatedBy = sheet.Text(row, "CreatedBy"),
                     CreatedDate = sheet.Date(row, "CreatedDate", true),
 
@@ -282,6 +285,8 @@ namespace Accounting_System.Repository
                 TransactionDate = row.TransactionDate,
                 DueDate = row.DueDate,
 
+                CwtPercent = row.CwtPercent,
+                CwVatPercent = row.CwVatPercent,
                 CreatedBy = row.CreatedBy,
                 CreatedDate = row.CreatedDate,
 
@@ -389,6 +394,8 @@ namespace Accounting_System.Repository
         {
             var changes = new Dictionary<string, (string, string)>();
 
+            _generalRepo.Compare(changes, logs, "CwtPercent", entity.CwtPercent.ToString("0.0000", CultureInfo.InvariantCulture), row.CwtPercent.ToString("0.0000", CultureInfo.InvariantCulture));
+            _generalRepo.Compare(changes, logs, "CwVatPercent", entity.CwVatPercent.ToString("0.0000", CultureInfo.InvariantCulture), row.CwVatPercent.ToString("0.0000", CultureInfo.InvariantCulture));
             _generalRepo.Compare(changes, logs, "SalesInvoiceNo",
                 StringHelper.NormalizeString(entity.SalesInvoiceNo),
                 row.SalesInvoiceNo);
@@ -540,9 +547,9 @@ namespace Accounting_System.Repository
                 CreatedBy = row.CreatedBy,
                 CreatedDate = row.CreatedDate,
                 DueDate = row.DueDate,
-                VatableSales = customer.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(row.Amount) : row.Amount,
-                VatAmount = _generalRepo.ComputeVatAmount(customer.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(row.Amount) : row.Amount),
-                NetSales = customer.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(row.Amount) : row.Amount - row.Discount,
+                VatableSales = customer.VatType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(row.Amount) : row.Amount,
+                VatAmount = _generalRepo.ComputeVatAmount(customer.VatType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(row.Amount) : row.Amount),
+                NetSales = customer.VatType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(row.Amount) : row.Amount - row.Discount,
             };
 
             await _dbContext.SalesBooks.AddAsync(salesBook, cancellationToken);
@@ -557,10 +564,10 @@ namespace Accounting_System.Repository
 
 
             decimal netDiscount = row.Amount - row.Discount;
-            decimal netOfVatAmount = customer.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(netDiscount) : netDiscount;
-            decimal vatAmount = customer.CustomerType == CS.VatType_Vatable ? _generalRepo.ComputeVatAmount(netOfVatAmount) : 0;
-            decimal withHoldingTaxAmount = customer.WithHoldingTax ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m) : 0;
-            decimal withHoldingVatAmount = customer.WithHoldingVat ? _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.05m) : 0;
+            decimal netOfVatAmount = customer.VatType == CS.VatType_Vatable ? _generalRepo.ComputeNetOfVat(netDiscount) : netDiscount;
+            decimal vatAmount = customer.VatType == CS.VatType_Vatable ? _generalRepo.ComputeVatAmount(netOfVatAmount) : 0;
+            decimal withHoldingTaxAmount = customer.WithHoldingTax ? _generalRepo.ComputeEwtAmount(netOfVatAmount, row.CwtPercent) : 0;
+            decimal withHoldingVatAmount = customer.WithHoldingVat ? _generalRepo.ComputeEwtAmount(netOfVatAmount, row.CwVatPercent) : 0;
 
             var accountTitlesDto = await _generalRepo.GetListOfAccountTitleDto(cancellationToken);
             var arTradeReceivableTitle = accountTitlesDto.Find(c => c.AccountNumber == "101020100") ?? throw new ArgumentException("Account number: '101020100', Account title: 'AR-Trade Receivable' not found.");

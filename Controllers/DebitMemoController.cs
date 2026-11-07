@@ -261,6 +261,8 @@ namespace Accounting_System.Controllers
                         model.DebitAmount = model.Amount ?? 0;
                     }
 
+                    await _debitMemoRepo.CalculateTaxAmountsAsync(model, cancellationToken);
+
                     #region --Audit Trail Recording
 
                     if (model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId == 0)
@@ -273,6 +275,7 @@ namespace Accounting_System.Controllers
                     #endregion --Audit Trail Recording
 
                     await _dbContext.AddAsync(model, cancellationToken);
+                    await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
                     await _dbContext.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
 
@@ -386,7 +389,7 @@ namespace Accounting_System.Controllers
 
                         var sales = new SalesBook();
 
-                        if (model.SalesInvoice.Customer!.CustomerType == "Vatable")
+                        if (model.SalesInvoice.Customer!.VatType == "Vatable")
                         {
                             sales.TransactionDate = model.TransactionDate;
                             sales.SerialNo = model.DebitMemoNo!;
@@ -404,7 +407,7 @@ namespace Accounting_System.Controllers
                             sales.DueDate = existingSi!.DueDate;
                             sales.DocumentId = model.SalesInvoiceId;
                         }
-                        else if (model.SalesInvoice.Customer.CustomerType == "Exempt")
+                        else if (model.SalesInvoice.Customer.VatType == "Exempt")
                         {
                             sales.TransactionDate = model.TransactionDate;
                             sales.SerialNo = model.DebitMemoNo!;
@@ -444,26 +447,18 @@ namespace Accounting_System.Controllers
 
                         #region --General Ledger Book Recording(SI)--
 
-                        decimal withHoldingTaxAmount = 0;
-                        decimal withHoldingVatAmount = 0;
+                        var withHoldingTaxAmount = model.CwtAmount;
+                        var withHoldingVatAmount = model.CwVatAmount;
                         decimal netOfVatAmount;
                         decimal vatAmount = 0;
-                        if (model.SalesInvoice.Customer.CustomerType == CS.VatType_Vatable)
+                        if (model.SalesInvoice.Customer.VatType == CS.VatType_Vatable)
                         {
-                            netOfVatAmount = _generalRepo.ComputeNetOfVat(model.DebitAmount);
-                            vatAmount = _generalRepo.ComputeVatAmount(netOfVatAmount);
+                            netOfVatAmount = model.DebitAmount == 0m ? 0m : _generalRepo.ComputeNetOfVat(model.DebitAmount);
+                            vatAmount = netOfVatAmount == 0m ? 0m : _generalRepo.ComputeVatAmount(netOfVatAmount);
                         }
                         else
                         {
                             netOfVatAmount = model.DebitAmount;
-                        }
-                        if (model.SalesInvoice.Customer.WithHoldingTax)
-                        {
-                            withHoldingTaxAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m);
-                        }
-                        if (model.SalesInvoice.Customer.WithHoldingVat)
-                        {
-                            withHoldingVatAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.05m);
                         }
 
                         var ledgers = new List<GeneralLedgerBook>
@@ -569,7 +564,7 @@ namespace Accounting_System.Controllers
 
                         viewModelDmcm.Period = DateOnly.FromDateTime(model.CreatedDate) >= model.Period ? DateOnly.FromDateTime(model.CreatedDate) : model.Period.AddMonths(1).AddDays(-1);
 
-                        if (existingSv!.Customer!.CustomerType == "Vatable")
+                        if (existingSv!.Customer!.VatType == "Vatable")
                         {
                             viewModelDmcm.Total = model.Amount ?? 0  - existingSv.Discount;
                             viewModelDmcm.NetAmount = _generalRepo.ComputeNetOfVat(viewModelDmcm.Total);
@@ -596,7 +591,7 @@ namespace Accounting_System.Controllers
 
                         var sales = new SalesBook();
 
-                        if (model.ServiceInvoice!.Customer!.CustomerType == "Vatable")
+                        if (model.ServiceInvoice!.Customer!.VatType == "Vatable")
                         {
                             sales.TransactionDate = viewModelDmcm.Period;
                             sales.SerialNo = model.DebitMemoNo!;
@@ -614,7 +609,7 @@ namespace Accounting_System.Controllers
                             sales.DueDate = existingSv.DueDate;
                             sales.DocumentId = existingSv.ServiceInvoiceId;
                         }
-                        else if (model.ServiceInvoice.Customer.CustomerType == "Exempt")
+                        else if (model.ServiceInvoice.Customer.VatType == "Exempt")
                         {
                             sales.TransactionDate = viewModelDmcm.Period;
                             sales.SerialNo = model.DebitMemoNo!;
@@ -654,7 +649,10 @@ namespace Accounting_System.Controllers
 
                         #region --General Ledger Book Recording(SV)--
 
-                        var ledgers = new List<GeneralLedgerBook>
+                    var withHoldingTaxAmount = model.CwtAmount;
+                    var withHoldingVatAmount = model.CwVatAmount;
+
+                    var ledgers = new List<GeneralLedgerBook>
                         {
                             new GeneralLedgerBook
                             {
@@ -663,14 +661,14 @@ namespace Accounting_System.Controllers
                                 Description = model.ServiceInvoice.Service.Name,
                                 AccountNo = arNonTradeReceivableTitle.AccountNumber,
                                 AccountTitle = arNonTradeReceivableTitle.AccountName,
-                                Debit = viewModelDmcm.Total - (viewModelDmcm.WithholdingTaxAmount + viewModelDmcm.WithholdingVatAmount),
+                                Debit = viewModelDmcm.Total - (withHoldingTaxAmount + withHoldingVatAmount),
                                 Credit = 0,
                                 CreatedBy = model.CreatedBy,
                                 CreatedDate = model.CreatedDate
                             }
                         };
 
-                        if (viewModelDmcm.WithholdingTaxAmount > 0)
+                        if (withHoldingTaxAmount > 0)
                         {
                             ledgers.Add(
                                 new GeneralLedgerBook
@@ -680,14 +678,14 @@ namespace Accounting_System.Controllers
                                     Description = model.ServiceInvoice.Service.Name,
                                     AccountNo = arTradeCwt.AccountNumber,
                                     AccountTitle = arTradeCwt.AccountName,
-                                    Debit = viewModelDmcm.WithholdingTaxAmount,
+                                    Debit = withHoldingTaxAmount,
                                     Credit = 0,
                                     CreatedBy = model.CreatedBy,
                                     CreatedDate = model.CreatedDate
                                 }
                             );
                         }
-                        if (viewModelDmcm.WithholdingVatAmount > 0)
+                        if (withHoldingVatAmount > 0)
                         {
                             ledgers.Add(
                                 new GeneralLedgerBook
@@ -697,7 +695,7 @@ namespace Accounting_System.Controllers
                                     Description = model.ServiceInvoice.Service.Name,
                                     AccountNo = arTradeCwv.AccountNumber,
                                     AccountTitle = arTradeCwv.AccountName,
-                                    Debit = viewModelDmcm.WithholdingVatAmount,
+                                    Debit = withHoldingVatAmount,
                                     Credit = 0,
                                     CreatedBy = model.CreatedBy,
                                     CreatedDate = model.CreatedDate
@@ -984,6 +982,7 @@ namespace Accounting_System.Controllers
 
                         #endregion -- Saving Default Enries --
                     }
+                    await _debitMemoRepo.CalculateTaxAmountsAsync(existingDm!, cancellationToken);
                     if (_dbContext.ChangeTracker.HasChanges())
                     {
                         #region --Audit Trail Recording
@@ -996,6 +995,8 @@ namespace Accounting_System.Controllers
                         }
 
                         #endregion --Audit Trail Recording
+
+                        await TransactionDraftFields.PrepareAsync(_dbContext, cancellationToken);
 
                         await _dbContext.SaveChangesAsync(cancellationToken);
                         await transaction.CommitAsync(cancellationToken);
@@ -1132,6 +1133,8 @@ namespace Accounting_System.Controllers
                 worksheet2.Cells["AB1"].Value = "CanceledDate";
                 worksheet2.Cells["AC1"].Value = "VoidedBy";
                 worksheet2.Cells["AD1"].Value = "VoidedDate";
+                worksheet2.Cells["AE1"].Value = "CwtPercent";
+                worksheet2.Cells["AF1"].Value = "CwVatPercent";
 
                 #endregion -- Sales Invoice Table Header --
 
@@ -1166,6 +1169,8 @@ namespace Accounting_System.Controllers
                 worksheet3.Cells["Y1"].Value = "CanceledDate";
                 worksheet3.Cells["Z1"].Value = "VoidedBy";
                 worksheet3.Cells["AA1"].Value = "VoidedDate";
+                worksheet3.Cells["AB1"].Value = "CwtPercent";
+                worksheet3.Cells["AC1"].Value = "CwVatPercent";
 
                 #endregion -- Service Invoice Table Header --
 
@@ -1280,6 +1285,8 @@ namespace Accounting_System.Controllers
                     worksheet2.Cells[siRow, 28].Value = item.SalesInvoice.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet2.Cells[siRow, 29].Value = item.SalesInvoice.VoidedBy;
                     worksheet2.Cells[siRow, 30].Value = item.SalesInvoice.VoidedDate?.ToString(CS.ImportDateTimeFormat);
+                    worksheet2.Cells[siRow, 31].Value = item.SalesInvoice.CwtPercent;
+                    worksheet2.Cells[siRow, 32].Value = item.SalesInvoice.CwVatPercent;
 
                     siRow++;
                 }
@@ -1323,6 +1330,8 @@ namespace Accounting_System.Controllers
                     worksheet3.Cells[svRow, 25].Value = item.ServiceInvoice.CanceledDate?.ToString(CS.ImportDateTimeFormat);
                     worksheet3.Cells[svRow, 26].Value = item.ServiceInvoice.VoidedBy;
                     worksheet3.Cells[svRow, 27].Value = item.ServiceInvoice.VoidedDate?.ToString(CS.ImportDateTimeFormat);
+                    worksheet3.Cells[svRow, 28].Value = item.ServiceInvoice.CwtPercent;
+                    worksheet3.Cells[svRow, 29].Value = item.ServiceInvoice.CwVatPercent;
 
                     svRow++;
                 }
@@ -1330,6 +1339,9 @@ namespace Accounting_System.Controllers
                 #endregion -- Service Invoice Export --
 
                 // Convert the Excel package to a byte array
+                TransactionColumns.Export(worksheet, selectedList);
+                TransactionColumns.Export(worksheet2, selectedList.Where(x => x.SalesInvoice != null).Select(x => x.SalesInvoice!));
+                TransactionColumns.Export(worksheet3, selectedList.Where(x => x.ServiceInvoice != null).Select(x => x.ServiceInvoice!));
                 var excelBytes = await package.GetAsByteArrayAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

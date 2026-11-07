@@ -55,5 +55,14 @@ namespace Accounting_System.Models.AccountsPayable
         public decimal EwtPercent { get; set; }
 
         public bool IsUserSelected { get; set; }
+
+        public bool IsDisplayEntry { get; set; }
+
+        public Accounting_System.Models.MasterFile.SubAccountType? SubAccountType { get; set; }
+
+        public int? SubAccountId { get; set; }
+
+        [Column(TypeName = "varchar(200)")]
+        public string? SubAccountName { get; set; }
     }
 }

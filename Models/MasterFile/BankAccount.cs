@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Accounting_System.Models.MasterFile
@@ -26,5 +26,14 @@ namespace Accounting_System.Models.MasterFile
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
         public int? OriginalBankId { get; set; }
+
+        [StringLength(200)]
+        public string Branch { get; set; } = string.Empty;
+
+        [StringLength(20)]
+        [Display(Name = "Account No")]
+        public string AccountNo { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; } = true;
     }
 }

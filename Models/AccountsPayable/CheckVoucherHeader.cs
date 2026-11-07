@@ -135,5 +135,65 @@ namespace Accounting_System.Models.AccountsPayable
         public int? OriginalBankId { get; set; }
 
         public ICollection<CheckVoucherDetail> Details { get; set; }
+
+        [StringLength(100)]
+        public string? OldCvNo { get; set; }
+
+        [StringLength(200)]
+        public string? SupplierName { get; set; }
+
+        [StringLength(200)]
+        public string? BankAccountName { get; set; }
+
+        [StringLength(100)]
+        public string? BankAccountNumber { get; set; }
+
+        [StringLength(50)]
+        public string Status { get; set; } = "Pending";
+
+
+        public bool? IsDocumentedByOtherCompany { get; set; }
+
+        [StringLength(50)]
+        public string? DocumentedByCompanyName { get; set; }
+
+        public string? SupportingFileSavedFileName { get; set; }
+
+        public string? SupportingFileSavedUrl { get; set; }
+
+        [Column(TypeName = "date")]
+        public DateOnly? DcpDate { get; set; }
+
+        [Column(TypeName = "date")]
+        public DateOnly? DcrDate { get; set; }
+
+        public bool IsAdvances { get; set; }
+
+        public bool IsEmployeeAdvance { get; set; }
+
+        [StringLength(200)]
+        public string Address { get; set; } = "";
+
+        [StringLength(20)]
+        public string Tin { get; set; } = "";
+
+        [StringLength(20)]
+        public string VatType { get; set; } = "";
+
+        [StringLength(20)]
+        public string TaxType { get; set; } = "";
+
+        [DisplayFormat(DataFormatString = "{0:#,##0.0000;(#,##0.0000)}", ApplyFormatInEditMode = false)]
+        [Column(TypeName = "numeric(18,4)")]
+        public decimal TaxPercent { get; set; }
+
+        public bool IsPayroll { get; set; }
+
+        public DateOnly? LiquidationDate { get; set; }
+
+        public string? ApprovedBy { get; set; }
+
+        [Column(TypeName = "timestamp without time zone")]
+        public DateTime? ApprovedDate { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿@model IEnumerable<Accounting_System.Models.Customer>
+@model IEnumerable<Accounting_System.Models.Customer>
 
 @{
     ViewData["Title"] = "Customer";
@@ -45,7 +45,7 @@
                     <th>
                         @Html.DisplayNameFor(model => model.CustomerType)
                     </th>
-                    <th></th>
+                    <th>Customer Code</th><th>Vat Type</th><th>Is Active</th><th></th>
                 </tr>
             </thead>
             <tbody>
@@ -69,8 +69,10 @@
                         </td>
                         <td>
                             @Html.DisplayFor(modelItem => item.CustomerType)
-                        </td>
+                        </td><td>@item.CustomerCode</td><td>@item.VatType</td><td>@item.IsActive</td>
+
                         <td class="align-items-center">
+                            <a asp-action="Branches" asp-route-id="@item.CustomerId" class="btn btn-light">Branches</a>
                             <a asp-action="Edit" asp-route-id="@item.CustomerId" class="btn btn-light">Edit</a>
                         </td>
                     </tr>

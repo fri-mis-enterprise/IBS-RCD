@@ -1,4 +1,4 @@
-﻿using Accounting_System.Data;
+using Accounting_System.Data;
 using Accounting_System.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -63,6 +63,22 @@ namespace Accounting_System.Repository
             {
                 return 1001;
             }
+        }
+
+        public async Task<string> GenerateCodeAsync(string customerType, CancellationToken token)
+        {
+            var prefix = customerType switch
+            {
+                "Retail" => "RET",
+                "Industrial" => "IND",
+                "Reseller" => "RES",
+                _ => "GOV"
+            };
+            var codes = await _dbContext.Customers.Where(c => c.CustomerCode != null && c.CustomerCode.StartsWith(prefix))
+                .Select(c => c.CustomerCode!).ToListAsync(token);
+            var next = codes.Select(c => int.TryParse(c.AsSpan(3), out var n) ? n : 0).DefaultIfEmpty().Max() + 1;
+            if (next > 9999) throw new InvalidOperationException("Customer code range exhausted.");
+            return prefix + next.ToString("D4");
         }
     }
 }

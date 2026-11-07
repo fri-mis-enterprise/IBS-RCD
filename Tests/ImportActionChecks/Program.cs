@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Accounting_System.Data;
 using Accounting_System.Models;
 using Accounting_System.Models.AccountsPayable;
@@ -409,6 +409,10 @@ Assert(paymentLogs.All(x => x.Action == "Modify" && x.Executed), "AAS payment gr
 Assert(await aas.CVTradePayments.AnyAsync(x => x.CheckVoucherId == cv.CheckVoucherHeaderId && x.DocumentId == rr.ReceivingReportId && x.AmountPaid == 15.25m),
     "AAS payment group saves local references and fractional amounts");
 Assert((await aas.ReceivingReports.FindAsync(rr.ReceivingReportId))!.AmountPaid == 15.25m, "AAS payment totals reconciled");
+// The status round-trip above now includes vouchers. Restore the posted payer for this payment fixture.
+var postedPayer = (await aas.CheckVoucherHeaders.FindAsync(cv.CheckVoucherHeaderId))!;
+postedPayer.IsPosted = true;
+await aas.SaveChangesAsync();
 var aasMultiBatch = paymentBatch.AddTicks(10);
 var multiLogs = new List<ImportExportLog>();
 foreach (var (column, value) in new[] { ("CheckVoucherHeaderPaymentId", "901"), ("CheckVoucherHeaderInvoiceId", "902"), ("AmountPaid", "100.0000") })

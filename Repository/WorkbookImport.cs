@@ -194,7 +194,7 @@ public partial class WorkbookImport(
                 entry.Property(property.Name).CurrentValue = values[property.Name];
     }
 
-    private async Task ImportDocumentsAsync<TRow, TEntity>(IEnumerable<TRow> rows,
+    private async Task ImportDocumentsAsync<TRow, TEntity>(ExcelWorksheet worksheet, IEnumerable<TRow> rows,
         Func<TRow, string> key, IReadOnlyDictionary<string, TEntity> existing,
         Func<TRow, TEntity> map,
         Func<TEntity, TRow, Dictionary<string, (string, string)>> detect,
@@ -203,6 +203,7 @@ public partial class WorkbookImport(
         Func<TRow, TEntity, Task>? post, CancellationToken cancellationToken,
         params string[] preserve) where TEntity : BaseEntity
     {
+        var supplementalRows = TransactionColumns.IndexRows<TEntity>(worksheet);
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var imported = new List<(TRow Row, TEntity Entity)>();
         foreach (var row in rows)
@@ -211,11 +212,20 @@ public partial class WorkbookImport(
             if (string.IsNullOrWhiteSpace(series)) throw new InvalidOperationException("An original series number is missing.");
             if (!seen.Add(series)) continue;
             var mapped = map(row);
+            existing.TryGetValue(series, out var prior);
+            if (supplementalRows.TryGetValue(series, out var worksheetRow))
+                TransactionColumns.Import(mapped, prior, worksheet, worksheetRow);
             if (existing.TryGetValue(series, out var entity))
             {
                 var comparison = _comparisonSnapshots.TryGetValue((typeof(TEntity), series), out var snapshot)
                     ? (TEntity)snapshot : entity;
                 var changes = detect(comparison, row);
+                foreach (var field in TransactionColumns.Properties(typeof(TEntity)))
+                {
+                    var oldValue = System.Text.Json.JsonSerializer.Serialize(field.GetValue(comparison));
+                    var newValue = System.Text.Json.JsonSerializer.Serialize(field.GetValue(mapped));
+                    if (oldValue != newValue) changes[field.Name] = (oldValue, newValue);
+                }
                 if (changes.Count > 0) await log(entity.OriginalDocumentId, changes, _uploadedBy, series, _databaseName);
                 ApplyValues(entity, mapped, preserve.Concat([nameof(BaseEntity.IsPrinted)]).ToArray());
             }

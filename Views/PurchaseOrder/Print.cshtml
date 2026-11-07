@@ -1,4 +1,4 @@
-﻿@using Accounting_System.Models.AccountsPayable
+@using Accounting_System.Models.AccountsPayable
 @using Accounting_System.Utility
 @using Microsoft.AspNetCore.Identity
 @model PurchaseOrder
@@ -33,15 +33,15 @@
     <table class="w-100">
         <tbody>
             <tr style="padding-left:10px;">
-                <td class="w-75">Supplier: &nbsp;@Html.DisplayFor(model => model.Supplier!.SupplierName)</td>
+                <td class="w-75">Supplier: &nbsp;@(string.IsNullOrWhiteSpace(Model.SupplierName) ? Model.Supplier?.SupplierName : Model.SupplierName)</td>
                 <td class="w-25 text-end">Date: &nbsp;@Model.Date.ToString("MM/dd/yyyy")</td>
             </tr>
             <tr style="padding-left:10px;">
-                <td>Address: &nbsp;@Html.DisplayFor(model => model.Supplier!.SupplierAddress)</td>
+                <td>Address: &nbsp;@(string.IsNullOrWhiteSpace(Model.SupplierAddress) ? Model.Supplier?.SupplierAddress : Model.SupplierAddress)</td>
                 <td></td>
             </tr>
             <tr style="padding-left:10px;">
-                <td>TIN No.: &nbsp;@Html.DisplayFor(model => model.Supplier!.SupplierTin)</td>
+                <td>TIN No.: &nbsp;@(string.IsNullOrWhiteSpace(Model.SupplierTin) ? Model.Supplier?.SupplierTin : Model.SupplierTin)</td>
                 <td></td>
             </tr>
         </tbody>
@@ -60,7 +60,7 @@
         </thead>
         <tbody>
             <tr>
-                <td class="w-25">@Html.DisplayFor(model => model.Product!.ProductName)</td>
+                <td class="w-25">@(string.IsNullOrWhiteSpace(Model.ProductName) ? Model.Product?.ProductName : Model.ProductName)</td>
                 <td class="w-25">@Model.Quantity.ToString("N0")</td>
                 <td class="w-25">@Html.DisplayFor(model => model.Price)</td>
                 <td class="w-25">@Html.DisplayFor(model => model.Amount)</td>

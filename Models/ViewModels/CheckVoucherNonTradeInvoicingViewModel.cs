@@ -6,6 +6,7 @@ namespace Accounting_System.Models.ViewModels
 {
     public class CheckVoucherNonTradeInvoicingViewModel
     {
+        public CheckVoucherDocumentationViewModel Documentation { get; set; } = new();
         public List<SelectListItem>? Suppliers { get; set; }
 
         public int? SupplierId { get; set; } = null;
@@ -54,7 +55,6 @@ namespace Accounting_System.Models.ViewModels
 
         #endregion
 
-        public string? Type { get; set; }
 
         public int?[]? MultipleSupplierId { get; set; }
 

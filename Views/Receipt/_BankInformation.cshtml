@@ -1,0 +1,28 @@
+@model Accounting_System.Models.AccountsReceivable.CollectionReceipt
+@if (Model.IsPosted && !Model.IsCanceled && !Model.IsVoided)
+{
+    <div class="card mt-3 d-print-none">
+        <div class="card-body">
+            <h5>Bank Information</h5>
+            <p>Bank: @Model.BankAccountName @Model.BankAccountNumber<br/>Deposited: @Model.DepositedDate<br/>Cleared: @Model.ClearedDate</p>
+            <form method="post" class="receipt-bank-form" asp-action="@(Model.Status == "Returned" ? "Redeposit" : "Deposit")" data-banks-url="@Url.Action("GetBanks")">
+                <input type="hidden" name="id" value="@Model.CollectionReceiptId"/>
+                @if (Model.DepositedDate == null && Model.ClearedDate == null)
+                {
+                    <div class="mb-3"><label>Bank Account</label><select name="bankId" class="form-select" required><option value="">Select bank</option></select></div>
+                    <div class="mb-3"><label>Deposit Date</label><input name="@(Model.Status == "Returned" ? "redepositDate" : "depositDate")" type="date" min="@Model.TransactionDate.ToString("yyyy-MM-dd")" class="form-control" required/></div>
+                    <button type="submit" class="btn btn-primary">@(Model.Status == "Returned" ? "Redeposit" : "Record Deposit")</button>
+                }
+            </form>
+            @if (Model.DepositedDate != null && Model.ClearedDate == null)
+            {
+                <form method="post" asp-action="ApplyClearingDate" class="receipt-bank-form mt-3">
+                    <input type="hidden" name="id" value="@Model.CollectionReceiptId"/>
+                    <label>Clearing Date</label><input name="clearingDate" type="date" min="@Model.DepositedDate.Value.ToString("yyyy-MM-dd")" class="form-control mb-3" required/>
+                    <button type="submit" class="btn btn-primary">Record Clearing Date</button>
+                </form>
+                <form method="post" asp-action="Return" class="receipt-bank-form mt-3"><input type="hidden" name="id" value="@Model.CollectionReceiptId"/><button class="btn btn-outline-danger" type="submit">Return Check</button></form>
+            }
+        </div>
+    </div>
+}
