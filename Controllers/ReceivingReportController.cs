@@ -402,7 +402,6 @@ namespace Accounting_System.Controllers
 
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
             var userName = await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
-            var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CreatedBy : userName;
             var postedBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.PostedBy : userName;
             var date = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.PostedDate : DateTime.Now;
 
@@ -427,7 +426,7 @@ namespace Accounting_System.Controllers
                     if (model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId == 0)
                     {
                         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                        AuditTrail auditTrailBook = new(createdBy, $"Posted rr# {model.ReceivingReportNo}", "Receiving Report", ipAddress!);
+                        AuditTrail auditTrailBook = new(postedBy, $"Posted rr# {model.ReceivingReportNo}", "Receiving Report", ipAddress!);
                         await _dbContext.AddAsync(auditTrailBook, cancellationToken);
                     }
 
@@ -463,7 +462,7 @@ namespace Accounting_System.Controllers
             if (model != null && existingInventory != null)
             {
                 await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-                var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.VoidedBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+                var voidedBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.VoidedBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
                 var date = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.VoidedDate : DateTime.Now;
                 try
                 {
@@ -474,7 +473,7 @@ namespace Accounting_System.Controllers
                             model.IsPosted = false;
                         }
                         model.IsVoided = true;
-                        model.VoidedBy = createdBy;
+                        model.VoidedBy = voidedBy;
                         model.VoidedDate = date;
 
                         await _generalRepo.RemoveRecords<PurchaseJournalBook>(pb => pb.DocumentNo == model.ReceivingReportNo, cancellationToken);
@@ -488,7 +487,7 @@ namespace Accounting_System.Controllers
                         if (model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId == 0)
                         {
                             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                            AuditTrail auditTrailBook = new(createdBy, $"Voided rr# {model.ReceivingReportNo}", "Receiving Report", ipAddress!);
+                            AuditTrail auditTrailBook = new(voidedBy, $"Voided rr# {model.ReceivingReportNo}", "Receiving Report", ipAddress!);
                             await _dbContext.AddAsync(auditTrailBook, cancellationToken);
                         }
 
@@ -518,14 +517,14 @@ namespace Accounting_System.Controllers
             if (model != null)
             {
                 await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-                var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CanceledBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+                var canceledBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CanceledBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
                 var date = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CanceledDate : DateTime.Now;
                 try
                 {
                     if (!model.IsCanceled)
                     {
                         model.IsCanceled = true;
-                        model.CanceledBy = createdBy;
+                        model.CanceledBy = canceledBy;
                         model.CanceledDate = date;
                         model.CanceledQuantity = model.QuantityDelivered < model.QuantityReceived ? model.QuantityDelivered : model.QuantityReceived;
                         model.QuantityDelivered = 0;
@@ -537,7 +536,7 @@ namespace Accounting_System.Controllers
                         if (model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId == 0)
                         {
                             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                            AuditTrail auditTrailBook = new(createdBy, $"Cancelled rr# {model.ReceivingReportNo}", "Receiving Report", ipAddress!);
+                            AuditTrail auditTrailBook = new(canceledBy, $"Cancelled rr# {model.ReceivingReportNo}", "Receiving Report", ipAddress!);
                             await _dbContext.AddAsync(auditTrailBook, cancellationToken);
                         }
 

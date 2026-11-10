@@ -1129,7 +1129,6 @@ namespace Accounting_System.Controllers
             {
                 await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
                 var userName = await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
-                var createdBy = !modelHeader.OriginalSeriesNumber.IsNullOrEmpty() && modelHeader.OriginalDocumentId != 0 ? modelHeader.CreatedBy : userName;
                 var postedBy = !modelHeader.OriginalSeriesNumber.IsNullOrEmpty() && modelHeader.OriginalDocumentId != 0 ? modelHeader.PostedBy : userName;
                 var date = !modelHeader.OriginalSeriesNumber.IsNullOrEmpty() && modelHeader.OriginalDocumentId != 0 ? modelHeader.PostedDate : DateTime.Now;
 
@@ -1180,7 +1179,7 @@ namespace Accounting_System.Controllers
                             modelHeader.PostedDate = date;
 
                             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                            AuditTrail auditTrailBook = new(createdBy,
+                            AuditTrail auditTrailBook = new(postedBy,
                                 $"Posted check voucher# {modelHeader.CheckVoucherHeaderNo}", "Check Voucher Non Trade Invoice", ipAddress!);
                             await _dbContext.AddAsync(auditTrailBook, cancellationToken);
                         }
@@ -1196,7 +1195,7 @@ namespace Accounting_System.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to post invoice check vouchers. Error: {ErrorMessage}, Stack: {StackTrace}. Posted by: {UserName}",
-                        ex.Message, ex.StackTrace, createdBy);
+                        ex.Message, ex.StackTrace, postedBy);
                     await transaction.RollbackAsync(cancellationToken);
 
                     TempData["error"] = ex.Message;
@@ -1212,7 +1211,7 @@ namespace Accounting_System.Controllers
             var model = await _dbContext.CheckVoucherHeaders.FirstOrDefaultAsync(x => x.CheckVoucherHeaderId == id, cancellationToken);
 
                 await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-                var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CanceledBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+                var canceledBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CanceledBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
                 var date = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CanceledDate : DateTime.Now;
 
                 try
@@ -1221,7 +1220,7 @@ namespace Accounting_System.Controllers
                 {
                     if (!model.IsCanceled)
                     {
-                        model.CanceledBy = createdBy;
+                        model.CanceledBy = canceledBy;
                         model.CanceledDate = date;
                         model.IsCanceled = true;
                         //model.Status = nameof(CheckVoucherInvoiceStatus.Canceled);
@@ -1232,7 +1231,7 @@ namespace Accounting_System.Controllers
                         if (model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId == 0)
                         {
                             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                            AuditTrail auditTrailBook = new(createdBy,
+                            AuditTrail auditTrailBook = new(canceledBy,
                                 $"Canceled check voucher# {model.CheckVoucherHeaderNo}", "Check Voucher Non Trade Invoice", ipAddress!);
                             await _dbContext.AddAsync(auditTrailBook, cancellationToken);
                         }
@@ -1251,7 +1250,7 @@ namespace Accounting_System.Controllers
             {
                 await transaction.RollbackAsync(cancellationToken);
                 _logger.LogError(ex, "Failed to cancel invoice check vouchers. Error: {ErrorMessage}, Stack: {StackTrace}. Canceled by: {UserName}",
-                    ex.Message, ex.StackTrace, createdBy);
+                    ex.Message, ex.StackTrace, canceledBy);
                 TempData["error"] = $"Error: '{ex.Message}'";
                 return RedirectToAction(nameof(Index));
             }
@@ -1266,7 +1265,7 @@ namespace Accounting_System.Controllers
             if (model != null)
             {
                 await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-                var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.VoidedBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+                var voidedBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.VoidedBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
                 var date = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.VoidedDate : DateTime.Now;
 
                 try
@@ -1278,7 +1277,7 @@ namespace Accounting_System.Controllers
                             model.IsPosted = false;
                         }
 
-                        model.VoidedBy = createdBy;
+                        model.VoidedBy = voidedBy;
                         model.VoidedDate = date;
                         model.IsVoided = true;
                         //model.Status = nameof(CheckVoucherInvoiceStatus.Voided);
@@ -1293,7 +1292,7 @@ namespace Accounting_System.Controllers
                         if (model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId == 0)
                         {
                             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                            AuditTrail auditTrailBook = new(createdBy,
+                            AuditTrail auditTrailBook = new(voidedBy,
                                 $"Voided check voucher# {model.CheckVoucherHeaderNo}", "Check Voucher Non Trade Invoice", ipAddress!);
                             await _dbContext.AddAsync(auditTrailBook, cancellationToken);
                         }
@@ -1310,7 +1309,7 @@ namespace Accounting_System.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to void invoice check vouchers. Error: {ErrorMessage}, Stack: {StackTrace}. Voided by: {UserName}",
-                        ex.Message, ex.StackTrace, createdBy);
+                        ex.Message, ex.StackTrace, voidedBy);
                     await transaction.RollbackAsync(cancellationToken);
                     TempData["error"] = ex.Message;
                     return RedirectToAction(nameof(Index));

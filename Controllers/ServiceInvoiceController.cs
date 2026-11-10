@@ -304,7 +304,6 @@ namespace Accounting_System.Controllers
             var model = await _serviceInvoiceRepo.FindSv(id, cancellationToken);
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
             var userName = await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
-            var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CreatedBy : userName;
             var postedBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.PostedBy : userName;
             var date = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.PostedDate : DateTime.Now;
             try
@@ -512,7 +511,7 @@ namespace Accounting_System.Controllers
                     if (model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId == 0)
                     {
                         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                        AuditTrail auditTrailBook = new(createdBy, $"Posted service invoice# {model.ServiceInvoiceNo}", "Service Invoice", ipAddress!);
+                        AuditTrail auditTrailBook = new(postedBy, $"Posted service invoice# {model.ServiceInvoiceNo}", "Service Invoice", ipAddress!);
                         await _dbContext.AddAsync(auditTrailBook, cancellationToken);
                     }
 
@@ -538,7 +537,7 @@ namespace Accounting_System.Controllers
         {
             var model = await _dbContext.ServiceInvoices.FirstOrDefaultAsync(x => x.ServiceInvoiceId == id, cancellationToken);
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-            var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CanceledBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+            var canceledBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CanceledBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
             var date = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.CanceledDate : DateTime.Now;
             try
             {
@@ -547,7 +546,7 @@ namespace Accounting_System.Controllers
                     if (!model.IsCanceled)
                     {
                         model.IsCanceled = true;
-                        model.CanceledBy = createdBy;
+                        model.CanceledBy = canceledBy;
                         model.CanceledDate = date;
                         model.CancellationRemarks = cancellationRemarks;
 
@@ -556,7 +555,7 @@ namespace Accounting_System.Controllers
                         if (model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId == 0)
                         {
                             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                            AuditTrail auditTrailBook = new(createdBy, $"Cancelled service invoice# {model.ServiceInvoiceNo}", "Service Invoice", ipAddress!);
+                            AuditTrail auditTrailBook = new(canceledBy, $"Cancelled service invoice# {model.ServiceInvoiceNo}", "Service Invoice", ipAddress!);
                             await _dbContext.AddAsync(auditTrailBook, cancellationToken);
                         }
 
@@ -583,7 +582,7 @@ namespace Accounting_System.Controllers
         {
             var model = await _dbContext.ServiceInvoices.FirstOrDefaultAsync(x => x.ServiceInvoiceId == id, cancellationToken);
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-            var createdBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.VoidedBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
+            var voidedBy = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.VoidedBy : await _generalRepo.GetUserFullNameAsync(User.Identity!.Name!);
             var date = !model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId != 0 ? model.VoidedDate : DateTime.Now;
             try
             {
@@ -597,7 +596,7 @@ namespace Accounting_System.Controllers
                         }
 
                         model.IsVoided = true;
-                        model.VoidedBy = createdBy;
+                        model.VoidedBy = voidedBy;
                         model.VoidedDate = date;
 
                         #region --Audit Trail Recording
@@ -605,7 +604,7 @@ namespace Accounting_System.Controllers
                         if (model.OriginalSeriesNumber.IsNullOrEmpty() && model.OriginalDocumentId == 0)
                         {
                             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                            AuditTrail auditTrailBook = new(createdBy, $"Voided service invoice# {model.ServiceInvoiceNo}", "Service Invoice", ipAddress!);
+                            AuditTrail auditTrailBook = new(voidedBy, $"Voided service invoice# {model.ServiceInvoiceNo}", "Service Invoice", ipAddress!);
                             await _dbContext.AddAsync(auditTrailBook, cancellationToken);
                         }
 
