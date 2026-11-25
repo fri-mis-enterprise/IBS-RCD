@@ -304,7 +304,7 @@ namespace Accounting_System.Repository
 
             if (model.PurchaseOrder.Supplier.TaxType == CS.TaxType_WithTax)
             {
-                ewtAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, 0.01m);
+                ewtAmount = _generalRepo.ComputeEwtAmount(netOfVatAmount, model.TaxPercentage);
                 netOfEwtAmount = _generalRepo.ComputeNetOfEwt(model.Amount, ewtAmount);
             }
             else
